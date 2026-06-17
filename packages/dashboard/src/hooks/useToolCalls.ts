@@ -12,7 +12,10 @@ export function useToolCalls(opts: { agentId?: string; period?: string }) {
       setLoading(true);
       setError(null);
       try {
-        const result = await api.costs.toolCalls({ period: opts.period, agentId: opts.agentId, limit: 100 });
+        const callOpts: Parameters<typeof api.costs.toolCalls>[0] = { limit: 100 };
+        if (opts.period) callOpts.period = opts.period;
+        if (opts.agentId) callOpts.agentId = opts.agentId;
+        const result = await api.costs.toolCalls(callOpts);
         if (!cancelled) setData(result);
       } catch (err) {
         if (!cancelled) setError(String(err));

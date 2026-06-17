@@ -1,5 +1,3 @@
-export type LlmProvider = "openai" | "anthropic" | "google";
-
 export interface AgentTag {
   agentId: string;
   teamId?: string | undefined;

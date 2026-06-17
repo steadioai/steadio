@@ -51,10 +51,11 @@ export function createCostsRouter(db: Db) {
       .offset(offset);
 
     // Total count for pagination
-    const [{ total }] = await db
+    const countRows = await db
       .select({ total: sql<number>`count(*)` })
       .from(toolCallLogs)
       .where(and(...conditions));
+    const total = countRows[0]?.total ?? 0;
 
     // Top tools by call count
     const topTools = await db

@@ -1,6 +1,7 @@
 import { Routes, Route, NavLink } from "react-router-dom";
 import { OverviewPage } from "./pages/Overview.js";
 import { BudgetsPage } from "./pages/Budgets.js";
+import { ToolCallsPage } from "./pages/ToolCalls.js";
 
 const NAV_STYLE: React.CSSProperties = {
   padding: "8px 16px",
@@ -47,11 +48,18 @@ export function App() {
         >
           Budgets
         </NavLink>
+        <NavLink
+          to="/tool-calls"
+          style={({ isActive }) => (isActive ? ACTIVE_NAV_STYLE : NAV_STYLE)}
+        >
+          Tool Calls
+        </NavLink>
       </nav>
       <main>
         <Routes>
           <Route path="/" element={<OverviewPage />} />
           <Route path="/budgets" element={<BudgetsPage />} />
+          <Route path="/tool-calls" element={<ToolCallsPage />} />
         </Routes>
       </main>
     </div>

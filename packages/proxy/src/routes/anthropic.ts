@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { v4 as uuidv4 } from "uuid";
+import { createHash } from "node:crypto";
 import {
   parseAnthropicUsage,
   parseAnthropicToolCalls,
@@ -7,6 +8,20 @@ import {
 } from "../providers/anthropic.js";
 import { emitProxyEvent } from "../emit.js";
 import type { Redis } from "ioredis";
+
+function hashMessages(body: string | undefined): string | undefined {
+  if (!body) return undefined;
+  try {
+    const parsed = JSON.parse(body) as Record<string, unknown>;
+    const content: Record<string, unknown> = {};
+    if (parsed["messages"]) content.messages = parsed["messages"];
+    if (parsed["system"]) content.system = parsed["system"];
+    if (Object.keys(content).length === 0) return undefined;
+    return createHash("sha256").update(JSON.stringify(content)).digest("hex");
+  } catch {
+    return undefined;
+  }
+}
 
 interface ProxyDeps {
   anthropicApiUrl: string;
@@ -46,6 +61,7 @@ export function createAnthropicRouter(deps: ProxyDeps) {
     let isStreaming = false;
     let model = "unknown";
     let requestBody: string | undefined;
+    let promptHash: string | undefined;
 
     if (c.req.method !== "GET" && c.req.method !== "HEAD") {
       requestBody = await c.req.text();
@@ -54,6 +70,7 @@ export function createAnthropicRouter(deps: ProxyDeps) {
         isStreaming = parsed["stream"] === true;
         model = (parsed["model"] as string) ?? "unknown";
       } catch { /* ok */ }
+      promptHash = hashMessages(requestBody);
     }
 
     const upstream = await fetch(upstreamUrl, {
@@ -103,6 +120,7 @@ export function createAnthropicRouter(deps: ProxyDeps) {
             latencyMs: Date.now() - startMs,
             streaming: true,
             statusCode: upstream.status,
+            promptHash,
           });
         }
       })();
@@ -137,6 +155,7 @@ export function createAnthropicRouter(deps: ProxyDeps) {
       latencyMs: Date.now() - startMs,
       streaming: false,
       statusCode: upstream.status,
+      promptHash,
     });
 
     return new Response(responseText, {

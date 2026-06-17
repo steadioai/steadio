@@ -7,6 +7,8 @@ import { createProxyEventsRouter } from "./routes/proxy-events.js";
 import { createAttributionRouter } from "./routes/attribution.js";
 import { createBudgetsRouter } from "./routes/budgets.js";
 import { createCostsRouter } from "./routes/costs.js";
+import { createRunawaysRouter } from "./routes/runaways.js";
+import { createSseRouter } from "./routes/sse.js";
 
 export function createApp(db: Db, redis: Redis) {
   const app = new Hono();
@@ -20,6 +22,8 @@ export function createApp(db: Db, redis: Redis) {
   app.route("/", createAttributionRouter(db));
   app.route("/", createBudgetsRouter(db, redis));
   app.route("/", createCostsRouter(db));
+  app.route("/", createRunawaysRouter(db));
+  app.route("/", createSseRouter(redis));
 
   return app;
 }

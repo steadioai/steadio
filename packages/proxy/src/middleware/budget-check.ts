@@ -12,9 +12,10 @@ export function createBudgetCheckMiddleware(redis: Redis) {
     const teamId: string = c.get("teamId") ?? "untagged";
 
     try {
-      const [agentKilled, teamKilled] = await Promise.all([
+      const [agentKilled, teamKilled, circuitRaw] = await Promise.all([
         redis.get(`budget:killed:agent:${agentId}`),
         redis.get(`budget:killed:team:${teamId}`),
+        redis.get(`runaway:circuit:${agentId}`),
       ]);
 
       if (agentKilled) {
@@ -51,6 +52,26 @@ export function createBudgetCheckMiddleware(redis: Redis) {
           },
           402
         );
+      }
+
+      // Circuit breaker — block if open, allow if half-open (recovery test)
+      if (circuitRaw) {
+        const circuit = JSON.parse(circuitRaw) as {
+          state: string;
+          reason?: string;
+          cooldownUntil?: string;
+        };
+        if (circuit.state === "open") {
+          return c.json(
+            {
+              error: "circuit_open",
+              agent_id: agentId,
+              reason: circuit.reason ?? "runaway_detected",
+              retry_after: circuit.cooldownUntil,
+            },
+            429
+          );
+        }
       }
     } catch {
       // Redis down — allow request, log async

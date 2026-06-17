@@ -37,10 +37,11 @@ export function ToolCallsPage() {
   const [period, setPeriod] = useState<Period>("7d");
   const [agentFilter, setAgentFilter] = useState("");
 
-  const { data, loading, error } = useToolCalls({
-    period,
-    agentId: agentFilter.trim() || undefined,
-  });
+  const trimmedAgent = agentFilter.trim();
+  const hookOpts: { period: Period; agentId?: string } = { period };
+  if (trimmedAgent) hookOpts.agentId = trimmedAgent;
+
+  const { data, loading, error } = useToolCalls(hookOpts);
 
   const toolCalls = data?.toolCalls ?? [];
   const topTools = data?.topTools ?? [];

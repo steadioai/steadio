@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { v4 as uuidv4 } from "uuid";
+import { createHash } from "node:crypto";
 import {
   parseOpenAiUsage,
   parseOpenAiToolCalls,
@@ -7,6 +8,18 @@ import {
 } from "../providers/openai.js";
 import { emitProxyEvent } from "../emit.js";
 import type { Redis } from "ioredis";
+
+function hashMessages(body: string | undefined): string | undefined {
+  if (!body) return undefined;
+  try {
+    const parsed = JSON.parse(body) as Record<string, unknown>;
+    const content = parsed["messages"];
+    if (!content) return undefined;
+    return createHash("sha256").update(JSON.stringify(content)).digest("hex");
+  } catch {
+    return undefined;
+  }
+}
 
 interface ProxyDeps {
   openaiApiUrl: string;
@@ -61,11 +74,13 @@ export function createOpenAiRouter(deps: ProxyDeps) {
     }
 
     let model = "unknown";
+    let promptHash: string | undefined;
     if (requestBody) {
       try {
         const parsed = JSON.parse(requestBody) as Record<string, unknown>;
         model = (parsed["model"] as string) ?? "unknown";
       } catch { /* ok */ }
+      promptHash = hashMessages(requestBody);
     }
 
     const upstream = await fetch(upstreamUrl, {
@@ -118,6 +133,7 @@ export function createOpenAiRouter(deps: ProxyDeps) {
             latencyMs: Date.now() - startMs,
             streaming: true,
             statusCode: upstream.status,
+            promptHash,
           });
         }
       })();
@@ -150,6 +166,7 @@ export function createOpenAiRouter(deps: ProxyDeps) {
       latencyMs: Date.now() - startMs,
       streaming: false,
       statusCode: upstream.status,
+      promptHash,
     });
 
     return new Response(responseText, {

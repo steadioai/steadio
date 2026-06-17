@@ -10,6 +10,7 @@ import {
   circuitBreakAgent,
 } from "../services/runaway-detector.js";
 import type { ProxyEvent } from "../types.js";
+import { SSE_CHANNEL } from "./sse.js";
 
 export function createProxyEventsRouter(db: Db, redis: Redis) {
   const app = new Hono();
@@ -87,6 +88,18 @@ export function createProxyEventsRouter(db: Db, redis: Redis) {
         }
       })
       .catch((err: unknown) => console.error("[runaway] detection error:", err));
+
+    // Publish to SSE channel for real-time dashboard updates
+    redis.publish(SSE_CHANNEL, JSON.stringify({
+      agentId: event.agentId,
+      teamId: event.teamId,
+      model: event.model,
+      totalCostUsd: cost.totalCostUsd,
+      inputTokens: event.usage.inputTokens,
+      outputTokens: event.usage.outputTokens,
+      requestId: event.requestId,
+      recordedAt: new Date().toISOString(),
+    })).catch(() => {});
 
     return c.json({ ok: true }, 202);
   });
