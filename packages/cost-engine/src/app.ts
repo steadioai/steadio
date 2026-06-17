@@ -11,6 +11,7 @@ import { createRunawaysRouter } from "./routes/runaways.js";
 import { createCircuitBreakersRouter } from "./routes/circuit-breakers.js";
 import { createAlertConfigsRouter } from "./routes/alert-configs.js";
 import { createSseRouter } from "./routes/sse.js";
+import { createApiKeysRouter } from "./routes/api-keys.js";
 
 export function createApp(db: Db, redis: Redis) {
   const app = new Hono();
@@ -28,6 +29,7 @@ export function createApp(db: Db, redis: Redis) {
   app.route("/", createCircuitBreakersRouter(db, redis));
   app.route("/", createAlertConfigsRouter(db));
   app.route("/", createSseRouter(redis));
+  app.route("/", createApiKeysRouter(db));
 
   return app;
 }

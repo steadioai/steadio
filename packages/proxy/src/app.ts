@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import type { Redis } from "ioredis";
-import { authMiddleware } from "./middleware/auth.js";
+import { createAuthMiddleware } from "./middleware/auth.js";
 import { taggerMiddleware } from "./middleware/tagger.js";
 import { createBudgetCheckMiddleware } from "./middleware/budget-check.js";
 import { createOpenAiRouter } from "./routes/openai.js";
@@ -12,6 +12,7 @@ import type { ProxyEnv } from "./env.js";
 
 export function createApp(config: ProxyConfig, redis: Redis) {
   const app = new Hono<ProxyEnv>();
+  const authMiddleware = createAuthMiddleware(config.costEngineUrl, redis);
 
   app.use("*", logger());
 
