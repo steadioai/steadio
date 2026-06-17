@@ -7,8 +7,11 @@ import { computeCost } from "../services/cost-calculator.js";
 import { checkAndEnforceBudget } from "../services/budget-enforcer.js";
 import {
   trackVelocityAndDetectRunaway,
+  trackLoopSignature,
   circuitBreakAgent,
+  getCircuitBreakerState,
 } from "../services/runaway-detector.js";
+import { fireRunawayAlert } from "../services/alert-service.js";
 import type { ProxyEvent } from "../types.js";
 import { SSE_CHANNEL } from "./sse.js";
 
@@ -78,16 +81,10 @@ export function createProxyEventsRouter(db: Db, redis: Redis) {
       (err: unknown) => console.error("[budget] enforcement error:", err)
     );
 
-    // Runaway detection
-    const totalTokens = event.usage.inputTokens + event.usage.outputTokens;
-    trackVelocityAndDetectRunaway(redis, event.agentId, totalTokens)
-      .then(async ({ runaway, reason }) => {
-        if (runaway && reason) {
-          await circuitBreakAgent(redis, event.agentId, reason, cost.totalCostUsd);
-          console.log(`[runaway] circuit break: agent=${event.agentId} reason=${reason}`);
-        }
-      })
-      .catch((err: unknown) => console.error("[runaway] detection error:", err));
+    // Runaway detection — velocity + loop signature (async, non-blocking)
+    detectRunaway(db, redis, event, cost.totalCostUsd).catch(
+      (err: unknown) => console.error("[runaway] detection error:", err)
+    );
 
     // Publish to SSE channel for real-time dashboard updates
     redis.publish(SSE_CHANNEL, JSON.stringify({
@@ -105,4 +102,54 @@ export function createProxyEventsRouter(db: Db, redis: Redis) {
   });
 
   return app;
+}
+
+async function detectRunaway(
+  db: Db,
+  redis: Redis,
+  event: ProxyEvent,
+  totalCostUsd: number
+): Promise<void> {
+  // Skip if already open — avoid double-firing and redundant DB writes
+  const existing = await getCircuitBreakerState(redis, event.agentId);
+  if (existing.state === "open") return;
+
+  const totalTokens = event.usage.inputTokens + event.usage.outputTokens;
+
+  const [velocityResult, loopResult] = await Promise.all([
+    trackVelocityAndDetectRunaway(redis, event.agentId, totalTokens),
+    event.promptHash
+      ? trackLoopSignature(redis, event.agentId, event.promptHash)
+      : Promise.resolve({ loop: false, count: 0 }),
+  ]);
+
+  const runawayReason = velocityResult.runaway
+    ? "velocity"
+    : loopResult.loop
+      ? "loop"
+      : null;
+
+  if (!runawayReason) return;
+
+  console.warn(
+    `[runaway] detected: agent=${event.agentId} reason=${runawayReason} tokens=${totalTokens} cost=$${totalCostUsd.toFixed(6)}`
+  );
+
+  await circuitBreakAgent(
+    redis,
+    db,
+    event.agentId,
+    event.teamId,
+    runawayReason,
+    totalTokens,
+    totalCostUsd
+  );
+
+  await fireRunawayAlert(db, event.teamId, {
+    agentId: event.agentId,
+    reason: runawayReason,
+    tokenCount: totalTokens,
+    estimatedCostUsd: totalCostUsd,
+    actionTaken: "circuit_break",
+  });
 }

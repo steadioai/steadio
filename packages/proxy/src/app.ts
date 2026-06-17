@@ -8,9 +8,10 @@ import { createOpenAiRouter } from "./routes/openai.js";
 import { createAnthropicRouter } from "./routes/anthropic.js";
 import { createHealthRouter } from "./routes/health.js";
 import type { ProxyConfig } from "./config.js";
+import type { ProxyEnv } from "./context.js";
 
 export function createApp(config: ProxyConfig, redis: Redis) {
-  const app = new Hono();
+  const app = new Hono<ProxyEnv>();
 
   app.use("*", logger());
 

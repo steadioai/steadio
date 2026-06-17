@@ -8,6 +8,8 @@ import {
 } from "../providers/openai.js";
 import { emitProxyEvent } from "../emit.js";
 import type { Redis } from "ioredis";
+import type { ToolCall } from "@elevation/shared";
+import type { ProxyEnv } from "../context.js";
 
 function hashMessages(body: string | undefined): string | undefined {
   if (!body) return undefined;
@@ -28,7 +30,7 @@ interface ProxyDeps {
 }
 
 export function createOpenAiRouter(deps: ProxyDeps) {
-  const app = new Hono();
+  const app = new Hono<ProxyEnv>();
 
   app.all("/*", async (c) => {
     const requestId = uuidv4();
@@ -86,7 +88,7 @@ export function createOpenAiRouter(deps: ProxyDeps) {
     const upstream = await fetch(upstreamUrl, {
       method: c.req.method,
       headers,
-      body: requestBody ?? undefined,
+      body: requestBody ?? null,
     }).catch((err: unknown) => {
       console.error("[openai-proxy] upstream error:", err);
       return null;
@@ -133,7 +135,7 @@ export function createOpenAiRouter(deps: ProxyDeps) {
             latencyMs: Date.now() - startMs,
             streaming: true,
             statusCode: upstream.status,
-            promptHash,
+            ...(promptHash !== undefined ? { promptHash } : {}),
           });
         }
       })();
@@ -147,7 +149,7 @@ export function createOpenAiRouter(deps: ProxyDeps) {
     // Non-streaming: parse response for usage/tool calls then forward
     const responseText = await upstream.text();
     let usage = { inputTokens: 0, outputTokens: 0 };
-    let toolCalls = [];
+    let toolCalls: ToolCall[] = [];
     try {
       const parsed = JSON.parse(responseText) as unknown;
       usage = parseOpenAiUsage(parsed) ?? usage;
@@ -166,7 +168,7 @@ export function createOpenAiRouter(deps: ProxyDeps) {
       latencyMs: Date.now() - startMs,
       streaming: false,
       statusCode: upstream.status,
-      promptHash,
+      ...(promptHash !== undefined ? { promptHash } : {}),
     });
 
     return new Response(responseText, {

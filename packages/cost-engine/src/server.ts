@@ -1,5 +1,5 @@
 import { serve } from "@hono/node-server";
-import Redis from "ioredis";
+import { Redis } from "ioredis";
 import { getDb } from "./db/client.js";
 import { createApp } from "./app.js";
 

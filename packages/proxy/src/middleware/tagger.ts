@@ -1,7 +1,8 @@
 import { createMiddleware } from "hono/factory";
+import type { ProxyEnv } from "../context.js";
 
 // Extracts agent/team/workflow tags from request headers
-export const taggerMiddleware = createMiddleware(async (c, next) => {
+export const taggerMiddleware = createMiddleware<ProxyEnv>(async (c, next) => {
   const agentId = c.req.header("X-Agent-Id") ?? "untagged";
   const workflowId = c.req.header("X-Workflow-Id") ?? null;
 

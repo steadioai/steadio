@@ -70,7 +70,7 @@ export function createBudgetsRouter(db: Db, redis: Redis) {
       capUsd: body.capUsd.toString(),
       warningThresholdPercent: body.warningThresholdPercent ?? 80,
       enforcementMode: body.enforcementMode,
-      throttleModelId: body.throttleModelId,
+      throttleModelId: body.throttleModelId ?? null,
     });
 
     const [created] = await db.select().from(budgets).where(eq(budgets.id, id));

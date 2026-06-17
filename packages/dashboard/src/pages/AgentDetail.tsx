@@ -56,7 +56,7 @@ export function AgentDetailPage() {
   const [period, setPeriod] = useState<Period>("7d");
   const { data, loading } = useAgentDetail(agentId!, period);
   const { data: budgets } = useBudgets("agent", agentId);
-  const { data: history } = useCostHistory({ period, agentId });
+  const { data: history } = useCostHistory({ period, ...(agentId ? { agentId } : {}) });
 
   const historyFormatted = history.map((h) => ({
     label: period === "1d"

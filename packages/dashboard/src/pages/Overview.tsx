@@ -1,6 +1,8 @@
-import { useState } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { useAgentAttribution, useSummary } from "../hooks/useAttribution.js";
+import { useState, useCallback, useRef } from "react";
+import { Link } from "react-router-dom";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, AreaChart, Area, CartesianGrid } from "recharts";
+import { useAgentAttribution, useSummary, useCostHistory, useLiveStream } from "../hooks/useAttribution.js";
+import type { LiveCostEvent } from "../lib/api.js";
 
 const PERIODS = ["1d", "7d", "30d"] as const;
 type Period = typeof PERIODS[number];
@@ -15,15 +17,42 @@ function fmtNum(n: number | undefined | null) {
   return Number(n).toLocaleString();
 }
 
+const MAX_LIVE = 10;
+
 export function OverviewPage() {
   const [period, setPeriod] = useState<Period>("7d");
+  const [liveEvents, setLiveEvents] = useState<LiveCostEvent[]>([]);
+  const liveRef = useRef<LiveCostEvent[]>([]);
+
   const { data: agents, loading } = useAgentAttribution(period);
   const { data: summary } = useSummary({ period });
+  const { data: history } = useCostHistory({ period });
+
+  const onLive = useCallback((e: LiveCostEvent) => {
+    liveRef.current = [e, ...liveRef.current].slice(0, MAX_LIVE);
+    setLiveEvents([...liveRef.current]);
+  }, []);
+  const { connected } = useLiveStream(onLive);
+
+  const historyFormatted = history.map((h) => ({
+    label: period === "1d"
+      ? new Date(h.bucket).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : new Date(h.bucket).toLocaleDateString([], { month: "short", day: "numeric" }),
+    cost: Number(h.totalCostUsd),
+    requests: Number(h.requestCount),
+  }));
 
   return (
     <div style={{ padding: "24px", fontFamily: "system-ui, sans-serif" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 24 }}>Elevation Networks</h1>
+        <h1 style={{ margin: 0, fontSize: 24 }}>Overview</h1>
+
+        {/* Live indicator */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: connected ? "#00c9a7" : "#aaa" }}>
+          <div style={{ width: 8, height: 8, borderRadius: "50%", background: connected ? "#00c9a7" : "#ddd", animation: connected ? "pulse 2s infinite" : "none" }} />
+          {connected ? "Live" : "Connecting…"}
+        </div>
+
         <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
           {PERIODS.map((p) => (
             <button
@@ -36,6 +65,7 @@ export function OverviewPage() {
                 background: p === period ? "#0066ff" : "white",
                 color: p === period ? "white" : "#333",
                 cursor: "pointer",
+                fontSize: 13,
               }}
             >
               {p}
@@ -46,11 +76,58 @@ export function OverviewPage() {
 
       {/* Summary cards */}
       {summary && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 32 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16, marginBottom: 24 }}>
           <StatCard label="Total Spend" value={fmt(summary.totalCostUsd)} />
           <StatCard label="Requests" value={fmtNum(summary.requestCount)} />
           <StatCard label="Input Tokens" value={fmtNum(summary.inputTokens)} />
           <StatCard label="Output Tokens" value={fmtNum(summary.outputTokens)} />
+        </div>
+      )}
+
+      {/* Cost trend chart */}
+      {historyFormatted.length > 0 && (
+        <div style={{ background: "white", border: "1px solid #eee", borderRadius: 8, padding: 20, marginBottom: 24 }}>
+          <h2 style={{ margin: "0 0 16px", fontSize: 15, color: "#555" }}>Cost Trend</h2>
+          <ResponsiveContainer width="100%" height={220}>
+            <AreaChart data={historyFormatted}>
+              <defs>
+                <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#0066ff" stopOpacity={0.12} />
+                  <stop offset="95%" stopColor="#0066ff" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: number) => `$${v.toFixed(3)}`} />
+              <Tooltip formatter={(v: number) => [`$${Number(v).toFixed(6)}`, "Cost"]} />
+              <Area type="monotone" dataKey="cost" stroke="#0066ff" fill="url(#trendGrad)" strokeWidth={2} dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Live event feed */}
+      {liveEvents.length > 0 && (
+        <div style={{ background: "white", border: "1px solid #eee", borderRadius: 8, marginBottom: 24, overflow: "hidden" }}>
+          <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00c9a7" }} />
+            <h2 style={{ margin: 0, fontSize: 14, color: "#555" }}>Live Cost Events</h2>
+          </div>
+          <div style={{ maxHeight: 200, overflowY: "auto" }}>
+            {liveEvents.map((e, i) => (
+              <div key={i} style={{ padding: "8px 16px", borderTop: i > 0 ? "1px solid #f5f5f5" : undefined, display: "flex", gap: 16, fontSize: 12, alignItems: "center" }}>
+                <span style={{ color: "#aaa", fontFamily: "monospace" }}>
+                  {new Date(e.recordedAt).toLocaleTimeString()}
+                </span>
+                <span style={{ fontFamily: "monospace", color: "#555", flex: 1 }}>
+                  {e.agentId.length > 20 ? `${e.agentId.slice(0, 10)}…${e.agentId.slice(-8)}` : e.agentId}
+                </span>
+                <span style={{ color: "#888" }}>{e.model}</span>
+                <span style={{ fontWeight: 600, color: "#0066ff" }}>{fmt(e.totalCostUsd)}</span>
+                <span style={{ color: "#aaa" }}>{fmtNum(e.inputTokens)}↑ {fmtNum(e.outputTokens)}↓</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -69,7 +146,7 @@ export function OverviewPage() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "#f9f9f9" }}>
-                {["Agent ID", "Total Cost", "Requests", "Input Tokens", "Output Tokens", "Avg Cost/Req"].map((h) => (
+                {["Agent ID", "Total Cost", "Requests", "Input Tokens", "Output Tokens", "Avg Cost/Req", ""].map((h) => (
                   <th key={h} style={{ padding: "8px 16px", textAlign: "left", fontSize: 13, color: "#666", fontWeight: 600 }}>{h}</th>
                 ))}
               </tr>
@@ -78,12 +155,17 @@ export function OverviewPage() {
               {agents.map((agent) => (
                 <tr key={agent.agentId} style={{ borderTop: "1px solid #eee" }}>
                   <td style={{ padding: "10px 16px", fontSize: 13, fontFamily: "monospace" }}>{agent.agentId}</td>
-                  <td style={{ padding: "10px 16px", fontSize: 13 }}>{fmt(agent.totalCostUsd)}</td>
+                  <td style={{ padding: "10px 16px", fontSize: 13, fontWeight: 600 }}>{fmt(agent.totalCostUsd)}</td>
                   <td style={{ padding: "10px 16px", fontSize: 13 }}>{fmtNum(agent.requestCount)}</td>
                   <td style={{ padding: "10px 16px", fontSize: 13 }}>{fmtNum(agent.inputTokens)}</td>
                   <td style={{ padding: "10px 16px", fontSize: 13 }}>{fmtNum(agent.outputTokens)}</td>
                   <td style={{ padding: "10px 16px", fontSize: 13 }}>
                     {fmt(Number(agent.requestCount) > 0 ? Number(agent.totalCostUsd) / Number(agent.requestCount) : 0)}
+                  </td>
+                  <td style={{ padding: "10px 16px" }}>
+                    <Link to={`/agents/${encodeURIComponent(agent.agentId)}`} style={{ fontSize: 12, color: "#0066ff", textDecoration: "none" }}>
+                      View →
+                    </Link>
                   </td>
                 </tr>
               ))}

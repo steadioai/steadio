@@ -1,13 +1,13 @@
-import type { Context, Next } from "hono";
 import type { Redis } from "ioredis";
 import { createMiddleware } from "hono/factory";
+import type { ProxyEnv } from "../context.js";
 
 const BUDGET_EXCEEDED_TTL_SECONDS = 300; // 5 minutes
 
 // Fast Redis-based budget check on the hot path.
 // If Redis is unavailable, allow the request and log async (circuit breaker).
 export function createBudgetCheckMiddleware(redis: Redis) {
-  return createMiddleware(async (c: Context, next: Next) => {
+  return createMiddleware<ProxyEnv>(async (c, next) => {
     const agentId: string = c.get("agentId") ?? "untagged";
     const teamId: string = c.get("teamId") ?? "untagged";
 
