@@ -79,6 +79,36 @@ jobs:
       - name: Build dashboard image
         run: docker build -f packages/dashboard/Dockerfile -t elevation-dashboard:ci .
 
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run integration test suite
+        run: |
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.test.yml \
+            up \
+            --build \
+            --abort-on-container-exit \
+            --exit-code-from test-runner
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.test.yml \
+            logs
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose \
+            -f docker-compose.yml \
+            -f docker-compose.test.yml \
+            down -v --remove-orphans
+
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
