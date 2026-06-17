@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import type { ProxyEnv } from "../context.js";
+import type { ProxyEnv } from "../env.js";
 
 // Extracts agent/team/workflow tags from request headers
 export const taggerMiddleware = createMiddleware<ProxyEnv>(async (c, next) => {

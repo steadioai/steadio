@@ -1,5 +1,5 @@
 import { createMiddleware } from "hono/factory";
-import type { ProxyEnv } from "../context.js";
+import type { ProxyEnv } from "../env.js";
 
 // API key auth middleware — validates X-Elevation-Key header
 // The key is looked up in Redis cache, falling back to DB via cost-engine

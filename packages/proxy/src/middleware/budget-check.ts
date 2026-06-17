@@ -1,6 +1,6 @@
 import type { Redis } from "ioredis";
 import { createMiddleware } from "hono/factory";
-import type { ProxyEnv } from "../context.js";
+import type { ProxyEnv } from "../env.js";
 
 const BUDGET_EXCEEDED_TTL_SECONDS = 300; // 5 minutes
 

@@ -9,7 +9,7 @@ import {
 import { emitProxyEvent } from "../emit.js";
 import type { Redis } from "ioredis";
 import type { ToolCall } from "@elevation/shared";
-import type { ProxyEnv } from "../context.js";
+import type { ProxyEnv } from "../env.js";
 
 function hashMessages(body: string | undefined): string | undefined {
   if (!body) return undefined;
