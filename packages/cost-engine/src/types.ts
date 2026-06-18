@@ -1,0 +1,17 @@
+import type { TokenUsage, ToolCall, LlmProvider } from "@elevation/shared";
+
+export interface ProxyEvent {
+  requestId: string;
+  provider: LlmProvider;
+  model: string;
+  agentId: string;
+  teamId: string;
+  workflowId: string | null;
+  usage: TokenUsage;
+  toolCalls: ToolCall[];
+  latencyMs: number;
+  streaming: boolean;
+  statusCode: number;
+  /** SHA-256 of the request messages content — used for loop signature detection */
+  promptHash?: string;
+}
