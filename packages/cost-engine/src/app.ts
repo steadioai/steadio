@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { logger } from "hono/logger";
 import { cors } from "hono/cors";
+import { sql } from "drizzle-orm";
 import type { Db } from "./db/client.js";
 import type { Redis } from "ioredis";
 import { createProxyEventsRouter } from "./routes/proxy-events.js";
@@ -19,7 +20,18 @@ export function createApp(db: Db, redis: Redis) {
   app.use("*", logger());
   app.use("/api/*", cors());
 
-  app.get("/health", (c) => c.json({ status: "ok", version: "0.0.0" }));
+  app.get("/health", async (c) => {
+    let dbOk = false;
+    try {
+      await db.execute(sql`SELECT 1`);
+      dbOk = true;
+    } catch { /* ok */ }
+    return c.json({
+      status: dbOk ? "ok" : "degraded",
+      db: dbOk ? "ok" : "unavailable",
+      version: "0.0.0",
+    }, dbOk ? 200 : 207);
+  });
 
   app.route("/", createProxyEventsRouter(db, redis));
   app.route("/", createAttributionRouter(db));

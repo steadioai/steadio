@@ -3,6 +3,7 @@ export interface ProxyVariables {
   teamId: string;
   workflowId: string | null;
   apiKey: string;
+  keyId: string;
 }
 
 export type ProxyEnv = { Variables: ProxyVariables };

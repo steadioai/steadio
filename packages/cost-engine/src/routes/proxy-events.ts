@@ -41,6 +41,7 @@ export function createProxyEventsRouter(db: Db, redis: Redis) {
       id: uuidv4(),
       agentId: event.agentId,
       teamId: event.teamId,
+      apiKeyId: event.keyId !== "unknown" ? event.keyId : null,
       workflowId: event.workflowId,
       provider: event.provider,
       model: event.model,

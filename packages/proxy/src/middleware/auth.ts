@@ -10,6 +10,7 @@ interface ResolvedKey {
   keyId: string;
 }
 
+
 async function resolveFromDb(
   costEngineUrl: string,
   keyHash: string
@@ -70,6 +71,7 @@ export function createAuthMiddleware(costEngineUrl: string, redis: Redis) {
     }
 
     c.set("teamId", resolved.teamId);
+    c.set("keyId", resolved.keyId);
     c.set("apiKey", apiKey);
 
     await next();

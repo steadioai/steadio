@@ -38,6 +38,7 @@ export function createOpenAiRouter(deps: ProxyDeps) {
 
     const agentId: string = c.get("agentId") ?? "untagged";
     const teamId: string = c.get("teamId") ?? "untagged";
+    const keyId: string = c.get("keyId") ?? "unknown";
     const workflowId: string | null = c.get("workflowId") ?? null;
 
     // Build upstream URL
@@ -123,12 +124,18 @@ export function createOpenAiRouter(deps: ProxyDeps) {
         } finally {
           await writer.close();
           const usage = parseOpenAiStreamUsage(accumulated) ?? { inputTokens: 0, outputTokens: 0 };
+          if (upstream.status >= 500) {
+            console.error(
+              `[openai-proxy] upstream 5xx: status=${upstream.status} model=${model} keyId=${keyId} agentId=${agentId} requestId=${requestId}`
+            );
+          }
           void emitProxyEvent(deps.costEngineUrl, {
             requestId,
             provider: "openai",
             model,
             agentId,
             teamId,
+            keyId,
             workflowId,
             usage,
             toolCalls: [],
@@ -156,12 +163,18 @@ export function createOpenAiRouter(deps: ProxyDeps) {
       toolCalls = parseOpenAiToolCalls(parsed);
     } catch { /* ok */ }
 
+    if (upstream.status >= 500) {
+      console.error(
+        `[openai-proxy] upstream 5xx: status=${upstream.status} model=${model} keyId=${keyId} agentId=${agentId} requestId=${requestId}`
+      );
+    }
     void emitProxyEvent(deps.costEngineUrl, {
       requestId,
       provider: "openai",
       model,
       agentId,
       teamId,
+      keyId,
       workflowId,
       usage,
       toolCalls,

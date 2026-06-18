@@ -40,6 +40,7 @@ export function createAnthropicRouter(deps: ProxyDeps) {
 
     const agentId: string = c.get("agentId") ?? "untagged";
     const teamId: string = c.get("teamId") ?? "untagged";
+    const keyId: string = c.get("keyId") ?? "unknown";
     const workflowId: string | null = c.get("workflowId") ?? null;
 
     const url = new URL(c.req.url);
@@ -110,12 +111,18 @@ export function createAnthropicRouter(deps: ProxyDeps) {
         } finally {
           await writer.close();
           const usage = parseAnthropicStreamUsage(accumulated) ?? { inputTokens: 0, outputTokens: 0 };
+          if (upstream.status >= 500) {
+            console.error(
+              `[anthropic-proxy] upstream 5xx: status=${upstream.status} model=${model} keyId=${keyId} agentId=${agentId} requestId=${requestId}`
+            );
+          }
           void emitProxyEvent(deps.costEngineUrl, {
             requestId,
             provider: "anthropic",
             model,
             agentId,
             teamId,
+            keyId,
             workflowId,
             usage,
             toolCalls: [],
@@ -145,12 +152,18 @@ export function createAnthropicRouter(deps: ProxyDeps) {
       toolCalls = parseAnthropicToolCalls(parsed);
     } catch { /* ok */ }
 
+    if (upstream.status >= 500) {
+      console.error(
+        `[anthropic-proxy] upstream 5xx: status=${upstream.status} model=${model} keyId=${keyId} agentId=${agentId} requestId=${requestId}`
+      );
+    }
     void emitProxyEvent(deps.costEngineUrl, {
       requestId,
       provider: "anthropic",
       model,
       agentId,
       teamId,
+      keyId,
       workflowId,
       usage,
       toolCalls,

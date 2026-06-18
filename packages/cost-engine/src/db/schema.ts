@@ -38,6 +38,7 @@ export const costEvents = pgTable("cost_events", {
   id: text("id").primaryKey(),
   agentId: text("agent_id").notNull(),
   teamId: text("team_id").notNull(),
+  apiKeyId: text("api_key_id"),
   workflowId: text("workflow_id"),
   provider: text("provider").notNull(),
   model: text("model").notNull(),

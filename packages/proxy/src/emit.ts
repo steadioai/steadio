@@ -6,6 +6,7 @@ export interface ProxyEvent {
   model: string;
   agentId: string;
   teamId: string;
+  keyId: string;
   workflowId: string | null;
   usage: TokenUsage;
   toolCalls: ToolCall[];

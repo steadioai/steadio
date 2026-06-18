@@ -17,7 +17,7 @@ export function createApp(config: ProxyConfig, redis: Redis) {
   app.use("*", logger());
 
   // Health — no auth
-  app.route("/", createHealthRouter(redis));
+  app.route("/", createHealthRouter(redis, config.costEngineUrl));
 
   // All proxy routes require auth + tagging + budget check
   app.use("/openai/*", authMiddleware);
