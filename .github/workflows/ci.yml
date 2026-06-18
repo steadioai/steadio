@@ -28,7 +28,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @elevation/shared typecheck
+      - run: pnpm --filter @elevation/shared build
       - run: pnpm --filter @elevation/proxy typecheck
       - run: pnpm --filter @elevation/cost-engine typecheck
       - run: pnpm --filter @elevation/dashboard typecheck

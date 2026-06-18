@@ -3,7 +3,7 @@ RUN npm install -g pnpm@9
 
 FROM base AS deps
 WORKDIR /app
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/proxy/package.json ./packages/proxy/
 RUN pnpm install --frozen-lockfile
@@ -22,7 +22,7 @@ RUN pnpm --filter @elevation/proxy build
 FROM node:20-slim AS runner
 WORKDIR /app
 RUN npm install -g pnpm@9
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/proxy/package.json ./packages/proxy/
 RUN pnpm install --frozen-lockfile --prod
