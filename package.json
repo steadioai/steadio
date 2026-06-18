@@ -5,7 +5,7 @@
   "description": "Agent Reliability Control Plane — LLM proxy, cost attribution, budget enforcement, runaway detection",
   "packageManager": "pnpm@9.0.0",
   "engines": {
-    "node": ">=20.0.0",
+    "node": ">=22.0.0",
     "pnpm": ">=9.0.0"
   },
   "scripts": {
@@ -17,7 +17,7 @@
     "clean": "pnpm -r clean && rm -rf node_modules"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^22.0.0",
     "typescript": "^5.4.0"
   },
   "workspaces": [

@@ -1,4 +1,4 @@
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 RUN npm install -g pnpm@9
 
 FROM base AS deps
@@ -19,7 +19,7 @@ COPY packages/proxy ./packages/proxy
 RUN pnpm --filter @elevation/shared build
 RUN pnpm --filter @elevation/proxy build
 
-FROM node:20-slim AS runner
+FROM node:22-slim AS runner
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm@9
