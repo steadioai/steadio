@@ -1,6 +1,6 @@
-# Elevation Networks — Design Partner Documentation
+# Elevation Networks — Documentation
 
-Welcome to the Elevation Networks design partner trial. These docs cover everything you need to get up and running.
+These docs cover everything you need to get up and running.
 
 ## Guides
 

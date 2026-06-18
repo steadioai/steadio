@@ -106,7 +106,7 @@ If cost still does not appear, check that `X-Agent-Id` is set — untagged reque
 
 ### What happens if I use a model not in the pricing table?
 
-The request is proxied normally. Cost attribution falls back to zero for unknown models and a warning is logged. Please report unknown models to your Elevation contact so they can be added to the pricing table.
+The request is proxied normally. Cost attribution falls back to zero for unknown models and a warning is logged. Please report unknown models via [GitHub Issues](https://github.com/Elevation-Networks/elevation/issues) or [jon@elevationnetworks.net](mailto:jon@elevationnetworks.net) so they can be added to the pricing table.
 
 ---
 
@@ -201,7 +201,7 @@ This drops the PostgreSQL and Redis volumes, clearing all cost events, budgets, 
 
 ## Getting Help
 
-Report issues and share feedback via [GitHub Issues](https://github.com/Elevation-Networks/agent-view/issues). Include:
+Report issues and share feedback via [GitHub Issues](https://github.com/Elevation-Networks/elevation/issues) or email [jon@elevationnetworks.net](mailto:jon@elevationnetworks.net). Include:
 - The request you made (sanitize provider API keys)
 - The response you received (status code + body)
 - The service logs: `docker compose logs proxy cost-engine`

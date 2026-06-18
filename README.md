@@ -1,6 +1,6 @@
 # Elevation Networks — Agent Reliability Control Plane
 
-[![CI](https://github.com/Elevation-Networks/agent-view/actions/workflows/ci.yml/badge.svg)](https://github.com/Elevation-Networks/agent-view/actions/workflows/ci.yml)
+[![CI](https://github.com/Elevation-Networks/elevation/actions/workflows/ci.yml/badge.svg)](https://github.com/Elevation-Networks/elevation/actions/workflows/ci.yml)
 
 **Never get a surprise AI bill again.** Drop-in LLM proxy with per-agent cost attribution and hard budget enforcement.
 
@@ -36,8 +36,8 @@ The proxy sits on the hot path — auth, tagging, and budget check run synchrono
 ### 1. Clone and start the stack
 
 ```bash
-git clone https://github.com/Elevation-Networks/agent-view
-cd agent-view
+git clone https://github.com/Elevation-Networks/elevation
+cd elevation
 cp .env.example .env
 docker compose up -d
 ```
@@ -152,7 +152,7 @@ pnpm --filter @elevation/cost-engine test
 
 ## Support
 
-Questions, bug reports, and feature requests: [GitHub Issues](https://github.com/Elevation-Networks/agent-view/issues)
+Questions, bug reports, and feature requests: [GitHub Issues](https://github.com/Elevation-Networks/elevation/issues) or [jon@elevationnetworks.net](mailto:jon@elevationnetworks.net)
 
 ## License
 

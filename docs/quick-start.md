@@ -11,7 +11,7 @@ Get Elevation Networks running locally in under 10 minutes.
 ## 1. Clone and Start
 
 ```bash
-git clone https://github.com/Elevation-Networks/agent-view elevation
+git clone https://github.com/Elevation-Networks/elevation
 cd elevation
 docker compose up -d
 ```
@@ -68,7 +68,7 @@ echo "Your Elevation API key: $API_KEY"
 
 Keep this key. You will use it for all proxy requests.
 
-> **Early Access Note:** During the design partner trial, key validation is permissive — any correctly-formatted key is accepted. This will tighten before general availability.
+> **Note:** Key validation is currently permissive — any correctly-formatted key is accepted. Registration and stricter validation will be added in a future release.
 
 ## 4. Make Your First Request
 
