@@ -1,5 +1,6 @@
 import { Routes, Route, NavLink } from "react-router-dom";
 import { OverviewPage } from "./pages/Overview.js";
+import { AgentsPage } from "./pages/Agents.js";
 import { AgentDetailPage } from "./pages/AgentDetail.js";
 import { TeamsPage } from "./pages/Teams.js";
 import { BudgetsPage } from "./pages/Budgets.js";
@@ -41,6 +42,9 @@ export function App() {
         <NavLink to="/" end style={({ isActive }) => (isActive ? ACTIVE_NAV_STYLE : NAV_STYLE)}>
           Overview
         </NavLink>
+        <NavLink to="/agents" style={({ isActive }) => (isActive ? ACTIVE_NAV_STYLE : NAV_STYLE)}>
+          Agents
+        </NavLink>
         <NavLink to="/teams" style={({ isActive }) => (isActive ? ACTIVE_NAV_STYLE : NAV_STYLE)}>
           Teams
         </NavLink>
@@ -57,6 +61,7 @@ export function App() {
       <main>
         <Routes>
           <Route path="/" element={<OverviewPage />} />
+          <Route path="/agents" element={<AgentsPage />} />
           <Route path="/agents/:agentId" element={<AgentDetailPage />} />
           <Route path="/teams" element={<TeamsPage />} />
           <Route path="/budgets" element={<BudgetsPage />} />
@@ -64,6 +69,22 @@ export function App() {
           <Route path="/tool-calls" element={<ToolCallsPage />} />
         </Routes>
       </main>
+      <footer
+        style={{
+          borderTop: "1px solid #eee",
+          padding: "16px 24px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          fontSize: 12,
+          color: "#999",
+        }}
+      >
+        <span>Elevation Networks</span>
+        <a href="mailto:jon@elevationnetworks.net" style={{ color: "#999", textDecoration: "none" }}>
+          jon@elevationnetworks.net
+        </a>
+      </footer>
     </div>
   );
 }

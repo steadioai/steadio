@@ -150,6 +150,10 @@ pnpm --filter @elevation/proxy test
 pnpm --filter @elevation/cost-engine test
 ```
 
+## Support
+
+Questions, bug reports, and feature requests: [jon@elevationnetworks.net](mailto:jon@elevationnetworks.net)
+
 ## License
 
-MIT
+[MIT](./LICENSE)
