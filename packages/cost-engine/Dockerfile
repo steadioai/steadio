@@ -21,6 +21,7 @@ RUN pnpm --filter @elevation/cost-engine build
 
 FROM node:20-slim AS runner
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 RUN npm install -g pnpm@9
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/shared/package.json ./packages/shared/

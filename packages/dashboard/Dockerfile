@@ -20,6 +20,7 @@ RUN pnpm --filter @elevation/shared build
 RUN pnpm --filter @elevation/dashboard build
 
 FROM nginx:alpine AS runner
+RUN apk add --no-cache curl
 COPY --from=build /app/packages/dashboard/dist /usr/share/nginx/html
 COPY packages/dashboard/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
