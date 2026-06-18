@@ -81,9 +81,7 @@ export function App() {
         }}
       >
         <span>Elevation Networks</span>
-        <a href="mailto:jon@elevationnetworks.net" style={{ color: "#999", textDecoration: "none" }}>
-          jon@elevationnetworks.net
-        </a>
+        <span>elevationnetworks.net</span>
       </footer>
     </div>
   );

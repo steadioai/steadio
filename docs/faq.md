@@ -201,7 +201,7 @@ This drops the PostgreSQL and Redis volumes, clearing all cost events, budgets, 
 
 ## Getting Help
 
-Report issues and share feedback at [jon@elevationnetworks.net](mailto:jon@elevationnetworks.net). Include:
+Report issues and share feedback via [GitHub Issues](https://github.com/Elevation-Networks/agent-view/issues). Include:
 - The request you made (sanitize provider API keys)
 - The response you received (status code + body)
 - The service logs: `docker compose logs proxy cost-engine`
