@@ -1,6 +1,8 @@
 # Elevation Networks - Agent Reliability Control Plane
 
 [![CI](https://github.com/Elevation-Networks/elevation/actions/workflows/ci.yml/badge.svg)](https://github.com/Elevation-Networks/elevation/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/Elevation-Networks/elevation)](https://github.com/Elevation-Networks/elevation/releases)
 
 **Never get a surprise AI bill again.** Drop-in LLM proxy with per-agent cost attribution and hard budget enforcement.
 
@@ -33,12 +35,21 @@ The proxy sits on the hot path: auth, tagging, and budget check run synchronousl
 
 ## 5-Minute Setup
 
+### 0. One-command demo (no API keys needed)
+
+```bash
+git clone https://github.com/Elevation-Networks/elevation
+cd elevation
+make demo
+```
+
+This starts all services and seeds sample multi-agent cost data so the dashboard is populated immediately.
+
 ### 1. Clone and start the stack
 
 ```bash
 git clone https://github.com/Elevation-Networks/elevation
 cd elevation
-cp .env.example .env
 docker compose up -d
 ```
 
@@ -133,6 +144,21 @@ Budget scopes: `agent`, `team`. Periods: `daily`, `weekly`, `monthly`.
 
 **Language-agnostic.** One environment variable. Works with Python, TypeScript, Go, or anything that makes HTTP calls.
 
+## How Elevation compares
+
+|  | Elevation | Langfuse | Native provider billing |
+|---|---|---|---|
+| Per-agent cost attribution | Yes | Yes (with SDK) | No |
+| Hard budget enforcement | Yes (HTTP 402) | No | No |
+| Runaway detection + circuit break | Yes | No | No |
+| Language-agnostic (env var only) | Yes | No (SDK per language) | N/A |
+| Self-hosted | Yes | Yes | No |
+| Streaming support | Yes | Yes | N/A |
+| Real-time dashboard | Yes | Yes | Limited |
+| Setup | `docker compose up` | Deploy + instrument | Sign up |
+
+Langfuse is excellent for tracing and observability. Elevation is the layer that **stops runaway agents before they generate a surprise bill**.
+
 ## Development
 
 ```bash
@@ -149,6 +175,10 @@ pnpm --filter @elevation/dashboard dev
 pnpm --filter @elevation/proxy test
 pnpm --filter @elevation/cost-engine test
 ```
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for local setup, architecture walkthrough, and PR guidelines.
 
 ## Support
 
