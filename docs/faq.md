@@ -29,7 +29,7 @@ Elevation forwards those headers to the provider. It does not store or inspect y
 
 ### How does key validation work?
 
-API keys are validated against the database on every request. Keys must be registered and active — revoked or unknown keys are rejected with `401 invalid_api_key`. Use the `el_<teamId>_<suffix>` format; the `teamId` segment determines team attribution.
+API keys are validated against the database on every request. Keys must be registered and active. Revoked or unknown keys are rejected with `401 invalid_api_key`. Use the `el_<teamId>_<suffix>` format; the `teamId` segment determines team attribution.
 
 ---
 
@@ -49,7 +49,7 @@ For OpenAI-compatible SDKs, set `base_url` to `http://localhost:3001/openai`. Fo
 
 Yes. Google Gemini models (gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash) are supported. Route requests to `http://localhost:3001/google`.
 
-### I get a 404 calling the proxy — what's wrong?
+### I get a 404 calling the proxy. What's wrong?
 
 Check the route prefix. OpenAI chat completions is:
 
@@ -80,7 +80,7 @@ Yes. Set the `PORT` environment variable in `docker-compose.yml` or your `.env` 
 
 ### Is streaming supported?
 
-Yes, for both OpenAI and Anthropic. Set `"stream": true` in your request body — the proxy pipes the SSE stream directly back to your client.
+Yes, for both OpenAI and Anthropic. Set `"stream": true` in your request body. The proxy pipes the SSE stream directly back to your client.
 
 **OpenAI:** Elevation automatically injects `stream_options: { include_usage: true }` if you do not include it, so token counts are captured correctly from streamed responses.
 
@@ -90,7 +90,7 @@ Yes, for both OpenAI and Anthropic. Set `"stream": true` in your request body �
 
 This is usually a timing issue. Elevation processes cost attribution asynchronously after the stream completes. Wait a few seconds and refresh the dashboard.
 
-If cost still does not appear, check that `X-Agent-Id` is set — untagged requests still get stored but may not appear in agent-level views.
+If cost still does not appear, check that `X-Agent-Id` is set. Untagged requests still get stored but may not appear in agent-level views.
 
 ---
 
@@ -98,11 +98,11 @@ If cost still does not appear, check that `X-Agent-Id` is set — untagged reque
 
 ### OpenAI
 
-`gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-3.5-turbo` — plus version-dated variants like `gpt-4o-2024-08-06`. Version suffixes automatically match the base model for pricing purposes.
+`gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `gpt-3.5-turbo`, plus version-dated variants like `gpt-4o-2024-08-06`. Version suffixes automatically match the base model for pricing purposes.
 
 ### Anthropic
 
-`claude-opus-4-8`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022` — plus versioned variants.
+`claude-opus-4-8`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, plus versioned variants.
 
 ### What happens if I use a model not in the pricing table?
 
@@ -114,7 +114,7 @@ The request is proxied normally. Cost attribution falls back to zero for unknown
 
 ### I got a `402 budget_exceeded` response
 
-Your agent or team has hit its configured spending cap for the current period. The response body includes `reset_at` — the UTC time when the budget window resets and requests will be allowed again.
+Your agent or team has hit its configured spending cap for the current period. The response body includes `reset_at`, the UTC time when the budget window resets and requests will be allowed again.
 
 ```json
 {
@@ -132,7 +132,7 @@ To resume immediately, either:
 
 ### I got a `429 circuit_open` response
 
-The runaway detector triggered for your agent. Check the `retry_after` field — the circuit resets automatically after 5 minutes. Review your agent for an infinite loop or unbounded context growth. See [Feature Walkthrough — Runaway Detection](./feature-walkthrough.md#runaway-detection) for details.
+The runaway detector triggered for your agent. Check the `retry_after` field. The circuit resets automatically after 5 minutes. Review your agent for an infinite loop or unbounded context growth. See [Feature Walkthrough: Runaway Detection](./feature-walkthrough.md#runaway-detection) for details.
 
 ---
 
@@ -145,11 +145,11 @@ Agents and teams are created automatically on the first request. Make sure:
 2. `X-Agent-Id` is set to a non-empty string.
 3. The request returned a 2xx status code from the upstream provider.
 
-Requests that return provider errors (4xx/5xx from OpenAI or Anthropic) are still attributed — check the dashboard for error-status requests.
+Requests that return provider errors (4xx/5xx from OpenAI or Anthropic) are still attributed. Check the dashboard for error-status requests.
 
 ### How is the team ID determined?
 
-From the `X-Elevation-Key` header. The format is `el_<teamId>_<suffix>` — the string between the first and second underscore is used as the team ID. For example, `el_acme_abc123` → team ID `acme`.
+From the `X-Elevation-Key` header. The format is `el_<teamId>_<suffix>`. The string between the first and second underscore is used as the team ID. For example, `el_acme_abc123` → team ID `acme`.
 
 You can override this per-request with the `X-Team-Id` header.
 

@@ -11,7 +11,7 @@ Both services expose health endpoints that verify live dependencies:
 
 A healthy response returns HTTP 200 with `"status": "ok"`. Any dependency failure returns HTTP 207 with `"status": "degraded"` and the failing component named.
 
-## Uptime monitoring (UptimeRobot — free tier)
+## Uptime monitoring (UptimeRobot, free tier)
 
 UptimeRobot's free tier supports 50 monitors with 5-minute intervals.
 
@@ -23,7 +23,7 @@ UptimeRobot's free tier supports 50 monitors with 5-minute intervals.
    - **URL**: `https://<proxy-railway-host>/health`
    - **Monitoring Interval**: 5 minutes
 4. Under **Alert Contacts**, add your email or a Slack webhook
-5. Save — monitoring starts immediately
+5. Save. Monitoring starts immediately
 
 Repeat for the cost-engine health endpoint.
 
@@ -36,13 +36,13 @@ Repeat for the cost-engine health endpoint.
 Proxy errors are written to `stderr` via `console.error` and captured by Railway's log aggregator. Look for these log patterns:
 
 ```
-[openai-proxy] upstream 5xx:      — upstream provider returned 5xx
-[anthropic-proxy] upstream 5xx:   — upstream provider returned 5xx
-[openai-proxy] upstream error:    — network-level upstream failure
-[anthropic-proxy] upstream error: — network-level upstream failure
-[emit] failed to send proxy event: — cost-engine unreachable
-[runaway] detected:               — agent runaway circuit break fired
-[budget] enforcement error:       — budget enforcement failed
+[openai-proxy] upstream 5xx:        upstream provider returned 5xx
+[anthropic-proxy] upstream 5xx:    upstream provider returned 5xx
+[openai-proxy] upstream error:     network-level upstream failure
+[anthropic-proxy] upstream error:  network-level upstream failure
+[emit] failed to send proxy event: cost-engine unreachable
+[runaway] detected:                agent runaway circuit break fired
+[budget] enforcement error:        budget enforcement failed
 ```
 
 Each log line includes `requestId`, `keyId`, `agentId`, and `model` for correlation.

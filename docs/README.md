@@ -1,4 +1,4 @@
-# Elevation Networks — Documentation
+# Elevation Networks - Documentation
 
 These docs cover everything you need to get up and running.
 

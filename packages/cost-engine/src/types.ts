@@ -13,6 +13,6 @@ export interface ProxyEvent {
   latencyMs: number;
   streaming: boolean;
   statusCode: number;
-  /** SHA-256 of the request messages content — used for loop signature detection */
+  /** SHA-256 of the request messages content, used for loop signature detection */
   promptHash?: string;
 }

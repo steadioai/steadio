@@ -43,14 +43,14 @@ export function createAuthMiddleware(costEngineUrl: string, redis: Redis) {
 
     let resolved: ResolvedKey | null = null;
 
-    // Redis cache lookup — avoids DB round-trip on hot path
+    // Redis cache lookup: avoids DB round-trip on hot path
     try {
       const cached = await redis.get(cacheKey);
       if (cached) {
         resolved = JSON.parse(cached) as ResolvedKey;
       }
     } catch {
-      // Redis unavailable — fall through to DB
+      // Redis unavailable, fall through to DB
     }
 
     if (!resolved) {

@@ -43,7 +43,7 @@ curl http://localhost:3001/health
 # Cost engine health
 curl http://localhost:3002/health
 
-# Dashboard — open in browser
+# Dashboard - open in browser
 open http://localhost:5173
 ```
 
@@ -68,7 +68,7 @@ echo "Your Elevation API key: $API_KEY"
 
 Keep this key. You will use it for all proxy requests.
 
-> **Note:** Key validation is currently permissive — any correctly-formatted key is accepted. Registration and stricter validation will be added in a future release.
+> **Note:** Key validation is currently permissive. Any correctly-formatted key is accepted. Registration and stricter validation will be added in a future release.
 
 ## 4. Make Your First Request
 
@@ -98,7 +98,7 @@ curl http://localhost:3001/openai/chat/completions \
 
 ## 5. View Your Data in the Dashboard
 
-Open [http://localhost:5173](http://localhost:5173) and navigate to the **Agents** page. After your first request, your agent and team will appear automatically — no manual registration required.
+Open [http://localhost:5173](http://localhost:5173) and navigate to the **Agents** page. After your first request, your agent and team will appear automatically, no manual registration required.
 
 ## 6. Configure a Second Provider (Anthropic)
 
@@ -122,6 +122,6 @@ The provider-specific auth headers (`Authorization: Bearer` for OpenAI, `x-api-k
 
 ## Next Steps
 
-- **[Integration Guide](./integration-guide.md)** — Point your existing Python or Node.js LLM clients at Elevation in minutes.
-- **[Feature Walkthrough](./feature-walkthrough.md)** — Cost attribution, budgets, alerts, and runaway detection.
-- **[FAQ](./faq.md)** — Troubleshooting, streaming support, supported models.
+- **[Integration Guide](./integration-guide.md)**: Point your existing Python or Node.js LLM clients at Elevation in minutes.
+- **[Feature Walkthrough](./feature-walkthrough.md)**: Cost attribution, budgets, alerts, and runaway detection.
+- **[FAQ](./faq.md)**: Troubleshooting, streaming support, supported models.

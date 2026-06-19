@@ -33,7 +33,7 @@ export const apiKeys = pgTable("api_keys", {
   revokedAt: timestamp("revoked_at"),
 });
 
-// TimescaleDB hypertable — partitioned by recorded_at
+// TimescaleDB hypertable, partitioned by recorded_at
 export const costEvents = pgTable("cost_events", {
   id: text("id").primaryKey(),
   agentId: text("agent_id").notNull(),

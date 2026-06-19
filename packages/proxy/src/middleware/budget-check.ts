@@ -54,7 +54,7 @@ export function createBudgetCheckMiddleware(redis: Redis) {
         );
       }
 
-      // Circuit breaker — block if open, allow if half-open (recovery test)
+      // Circuit breaker: block if open, allow if half-open (recovery test)
       if (circuitRaw) {
         const circuit = JSON.parse(circuitRaw) as {
           state: string;
@@ -74,7 +74,7 @@ export function createBudgetCheckMiddleware(redis: Redis) {
         }
       }
     } catch {
-      // Redis down — allow request, log async
+      // Redis down: allow request, log async
       console.warn("[budget-check] Redis unavailable, allowing request");
     }
 

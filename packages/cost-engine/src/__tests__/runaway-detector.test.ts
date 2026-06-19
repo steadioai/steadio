@@ -6,7 +6,7 @@ import {
   resetCircuitBreaker,
 } from "../services/runaway-detector.js";
 
-// In-memory Redis mock — just enough surface for the detector
+// In-memory Redis mock, just enough surface for the detector
 function makeMockRedis() {
   const store = new Map<string, { value: string; expiresAt: number | undefined }>();
   const sortedSets = new Map<string, Array<{ score: number; member: string }>>();
@@ -92,7 +92,7 @@ describe("trackVelocityAndDetectRunaway", () => {
   });
 
   it("does not trigger when tokens are below the avg-floor", async () => {
-    // avg too low — avg < 100 threshold
+    // avg too low: avg < 100 threshold
     await trackVelocityAndDetectRunaway(redis, "agent-1", 5);
     await trackVelocityAndDetectRunaway(redis, "agent-1", 5);
     const result = await trackVelocityAndDetectRunaway(redis, "agent-1", 50);
@@ -105,7 +105,7 @@ describe("trackVelocityAndDetectRunaway", () => {
     await trackVelocityAndDetectRunaway(redis, agentId, 500);
     await trackVelocityAndDetectRunaway(redis, agentId, 500);
     await trackVelocityAndDetectRunaway(redis, agentId, 500);
-    // 4th call: 10× spike — well above threshold
+    // 4th call: 10x spike, well above threshold
     const result = await trackVelocityAndDetectRunaway(redis, agentId, 10000);
     expect(result.runaway).toBe(true);
     expect(result.reason).toBe("velocity");
@@ -116,7 +116,7 @@ describe("trackVelocityAndDetectRunaway", () => {
     await trackVelocityAndDetectRunaway(redis, agentId, 1000);
     await trackVelocityAndDetectRunaway(redis, agentId, 1000);
     await trackVelocityAndDetectRunaway(redis, agentId, 1000);
-    // 5× spike — should NOT trigger (threshold is 10×)
+    // 5x spike, should NOT trigger (threshold is 10x)
     const result = await trackVelocityAndDetectRunaway(redis, agentId, 5000);
     expect(result.runaway).toBe(false);
   });
@@ -157,7 +157,7 @@ describe("trackLoopSignature", () => {
     for (let i = 0; i < 4; i++) {
       await trackLoopSignature(redis, agentId, "hash-a");
     }
-    // Different hash — should not be affected
+    // Different hash, should not be affected
     const result = await trackLoopSignature(redis, agentId, "hash-b");
     expect(result.loop).toBe(false);
     expect(result.count).toBe(1);
@@ -167,7 +167,7 @@ describe("trackLoopSignature", () => {
     for (let i = 0; i < 4; i++) {
       await trackLoopSignature(redis, "agent-x", "same-hash");
     }
-    // Different agent — counter starts fresh
+    // Different agent, counter starts fresh
     const result = await trackLoopSignature(redis, "agent-y", "same-hash");
     expect(result.loop).toBe(false);
     expect(result.count).toBe(1);

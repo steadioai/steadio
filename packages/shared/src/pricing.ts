@@ -1,6 +1,6 @@
 import type { ModelPricing } from "./types/cost.js";
 
-// Pricing per 1k tokens in USD — update as providers change rates
+// Pricing per 1k tokens in USD, update as providers change rates
 export const MODEL_PRICING: ModelPricing[] = [
   // OpenAI
   {
@@ -133,7 +133,7 @@ export function calculateCost(
 } {
   const pricing = getPricing(provider, model);
   if (!pricing) {
-    // Unknown model — return zero cost rather than throw
+    // Unknown model: return zero cost rather than throw
     return {
       inputCostUsd: 0,
       outputCostUsd: 0,

@@ -74,7 +74,7 @@ export async function trackVelocityAndDetectRunaway(
 
 /**
  * Track prompt hash occurrences. Detects when the same hash appears ≥ LOOP_CALL_THRESHOLD
- * times in LOOP_WINDOW_SECONDS — indicating an infinite loop.
+ * times in LOOP_WINDOW_SECONDS, indicating an infinite loop.
  */
 export async function trackLoopSignature(
   redis: Redis,
@@ -84,7 +84,7 @@ export async function trackLoopSignature(
   const key = `runaway:loop:${agentId}:${promptHash}`;
   const count = await redis.incr(key);
   if (count === 1) {
-    // First occurrence — set TTL for the window
+    // First occurrence: set TTL for the window
     await redis.expire(key, LOOP_WINDOW_SECONDS);
   }
   return { loop: count >= LOOP_CALL_THRESHOLD, count };

@@ -152,7 +152,7 @@ export function AlertHistoryPage() {
                     ? <span style={{ color: "#00c9a7" }}>overridden</span>
                     : r.cooldownUntil
                     ? fmtDate(r.cooldownUntil)
-                    : "—"}
+                    : "-"}
                 </span>
               </div>
             ))}

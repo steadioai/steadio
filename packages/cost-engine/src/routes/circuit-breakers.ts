@@ -12,7 +12,7 @@ import {
 export function createCircuitBreakersRouter(db: Db, redis: Redis) {
   const app = new Hono();
 
-  // GET /api/circuit-breakers — list recent runaway events (last 100, newest first)
+  // GET /api/circuit-breakers: list recent runaway events (last 100, newest first)
   app.get("/api/circuit-breakers", async (c) => {
     const rows = await db
       .select()
@@ -31,7 +31,7 @@ export function createCircuitBreakersRouter(db: Db, redis: Redis) {
     return c.json({ circuitBreakers: enriched });
   });
 
-  // GET /api/circuit-breakers/:agentId — live state from Redis + recent history
+  // GET /api/circuit-breakers/:agentId: live state from Redis + recent history
   app.get("/api/circuit-breakers/:agentId", async (c) => {
     const agentId = c.req.param("agentId");
     const state = await getCircuitBreakerState(redis, agentId);
@@ -46,7 +46,7 @@ export function createCircuitBreakersRouter(db: Db, redis: Redis) {
     return c.json({ state, history });
   });
 
-  // POST /api/circuit-breakers/:agentId/trip — manually open circuit
+  // POST /api/circuit-breakers/:agentId/trip: manually open circuit
   app.post("/api/circuit-breakers/:agentId/trip", async (c) => {
     const agentId = c.req.param("agentId");
     const body = await c.req.json().catch(() => ({})) as { teamId?: string };
@@ -58,7 +58,7 @@ export function createCircuitBreakersRouter(db: Db, redis: Redis) {
     return c.json({ ok: true, state });
   });
 
-  // DELETE /api/circuit-breakers/:agentId — reset circuit (close or half-open)
+  // DELETE /api/circuit-breakers/:agentId: reset circuit (close or half-open)
   app.delete("/api/circuit-breakers/:agentId", async (c) => {
     const agentId = c.req.param("agentId");
     const halfOpen = c.req.query("halfOpen") === "true";

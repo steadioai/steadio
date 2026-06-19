@@ -35,18 +35,18 @@ Every request tagged with `X-Agent-Id` is attributed to that agent. The proxy ca
 
 | Model                   | Input      | Output      | Cache Read | Cache Write |
 |-------------------------|------------|-------------|------------|-------------|
-| gpt-4o                  | $0.0025    | $0.0100     | —          | —           |
-| gpt-4o-mini             | $0.00015   | $0.00060    | —          | —           |
-| gpt-4-turbo             | $0.0100    | $0.0300     | —          | —           |
-| gpt-3.5-turbo           | $0.00050   | $0.00150    | —          | —           |
-| claude-opus-4-8         | $0.0150    | $0.0750     | —          | —           |
-| claude-sonnet-4-6       | $0.0030    | $0.0150     | —          | —           |
-| claude-haiku-4-5        | $0.00080   | $0.00400    | —          | —           |
+| gpt-4o                  | $0.0025    | $0.0100     | -          | -           |
+| gpt-4o-mini             | $0.00015   | $0.00060    | -          | -           |
+| gpt-4-turbo             | $0.0100    | $0.0300     | -          | -           |
+| gpt-3.5-turbo           | $0.00050   | $0.00150    | -          | -           |
+| claude-opus-4-8         | $0.0150    | $0.0750     | -          | -           |
+| claude-sonnet-4-6       | $0.0030    | $0.0150     | -          | -           |
+| claude-haiku-4-5        | $0.00080   | $0.00400    | -          | -           |
 | claude-3-5-sonnet       | $0.0030    | $0.0150     | $0.00030   | $0.00375    |
 | claude-3-5-haiku        | $0.00080   | $0.00400    | $0.00008   | $0.00100    |
-| gemini-1.5-pro          | $0.00125   | $0.00500    | —          | —           |
-| gemini-1.5-flash        | $0.000075  | $0.000300   | —          | —           |
-| gemini-2.0-flash        | $0.000100  | $0.000400   | —          | —           |
+| gemini-1.5-pro          | $0.00125   | $0.00500    | -          | -           |
+| gemini-1.5-flash        | $0.000075  | $0.000300   | -          | -           |
+| gemini-2.0-flash        | $0.000100  | $0.000400   | -          | -           |
 
 Anthropic prompt cache tokens (read and write) are tracked separately and appear in the agent detail breakdown.
 
@@ -84,11 +84,11 @@ curl -X POST http://localhost:3002/api/budgets \
 
 ### Enforcement Modes
 
-**`alert`** — The agent can continue making requests, but a warning event is logged at `warningThresholdPercent` of cap. No requests are blocked.
+**`alert`**: The agent can continue making requests, but a warning event is logged at `warningThresholdPercent` of cap. No requests are blocked.
 
-**`throttle`** — Requests still go through but Elevation logs an alert. (Hard throttling is on the roadmap.)
+**`throttle`**: Requests still go through but Elevation logs an alert. (Hard throttling is on the roadmap.)
 
-**`kill`** — Elevation blocks all requests from the agent or team once the cap is hit, returning HTTP 429 with a `budget_exceeded` error until the period resets.
+**`kill`**: Elevation blocks all requests from the agent or team once the cap is hit, returning HTTP 429 with a `budget_exceeded` error until the period resets.
 
 ### Budget Reset Windows
 
@@ -169,7 +169,7 @@ When either trigger fires:
 }
 ```
 
-4. After a **5-minute cooldown**, the circuit moves to half-open — one test request is allowed through.
+4. After a **5-minute cooldown**, the circuit moves to half-open. One test request is allowed through.
 5. If that request succeeds normally, the circuit closes and the agent resumes.
 
 ### Viewing Runaway Events
@@ -184,7 +184,7 @@ The **Runaway Events** page in the dashboard shows:
 ### Responding to a Runaway
 
 If you receive a 429 `circuit_open` response in your agent:
-1. Check the `retry_after` timestamp — the circuit resets automatically after 5 minutes.
+1. Check the `retry_after` timestamp. The circuit resets automatically after 5 minutes.
 2. Review your agent's logic for the failure mode (runaway loop, huge context, etc.).
 3. Fix the issue, then let the cooldown expire and retry.
 

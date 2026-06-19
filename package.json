@@ -2,7 +2,7 @@
   "name": "elevation-networks",
   "private": true,
   "version": "0.0.0",
-  "description": "Agent Reliability Control Plane — LLM proxy, cost attribution, budget enforcement, runaway detection",
+  "description": "Agent Reliability Control Plane: LLM proxy, cost attribution, budget enforcement, runaway detection",
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=22.0.0",

@@ -24,7 +24,7 @@ function fmtTime(iso: string) {
 }
 
 function fmtCost(n: number | null | undefined) {
-  if (n == null || n === 0) return "—";
+  if (n == null || n === 0) return "-";
   return `$${Number(n).toFixed(6)}`;
 }
 
@@ -277,7 +277,7 @@ export function ToolCallsPage() {
                         color: "#555",
                       }}
                     >
-                      {tc.latencyMs != null ? `${tc.latencyMs}ms` : "—"}
+                      {tc.latencyMs != null ? `${tc.latencyMs}ms` : "-"}
                     </td>
                     <td
                       style={{

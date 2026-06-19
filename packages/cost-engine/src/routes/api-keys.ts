@@ -6,7 +6,7 @@ import { apiKeys } from "../db/schema.js";
 export function createApiKeysRouter(db: Db) {
   const app = new Hono();
 
-  // Resolve a hashed key to its team — called by the proxy on cache miss.
+  // Resolve a hashed key to its team, called by the proxy on cache miss.
   // Returns 404 for unknown or revoked keys so the proxy can return 401.
   app.post("/api/keys/resolve", async (c) => {
     const body = await c.req.json<{ keyHash?: string }>();

@@ -7,7 +7,7 @@ export const SSE_CHANNEL = "cost:live";
 export function createSseRouter(redis: Redis) {
   const app = new Hono();
 
-  // GET /api/events/stream — SSE for real-time cost updates
+  // GET /api/events/stream: SSE for real-time cost updates
   app.get("/api/events/stream", (c) => {
     return streamSSE(c, async (stream) => {
       // Each SSE connection gets its own subscriber instance

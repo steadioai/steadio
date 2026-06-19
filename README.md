@@ -1,10 +1,10 @@
-# Elevation Networks — Agent Reliability Control Plane
+# Elevation Networks - Agent Reliability Control Plane
 
 [![CI](https://github.com/Elevation-Networks/elevation/actions/workflows/ci.yml/badge.svg)](https://github.com/Elevation-Networks/elevation/actions/workflows/ci.yml)
 
 **Never get a surprise AI bill again.** Drop-in LLM proxy with per-agent cost attribution and hard budget enforcement.
 
-> "Our costs have more than tripled since November of '25." — Chamath Palihapitiya on his AI startup's spend. Runaway agents can rack up $50,000 overnight. Elevation stops them at the source.
+> "Our costs have more than tripled since November of '25." - Chamath Palihapitiya on his AI startup's spend. Runaway agents can rack up $50,000 overnight. Elevation stops them at the source.
 
 ## What it does
 
@@ -12,7 +12,7 @@ Point your agents at `http://localhost:3001/openai` instead of OpenAI directly. 
 
 1. **Tags every request** with agent ID and team ID
 2. **Counts tokens and costs** in real time using provider-accurate pricing
-3. **Enforces budget caps** — returns HTTP 402 and kills the agent the moment it exceeds its limit
+3. **Enforces budget caps**: returns HTTP 402 and kills the agent the moment it exceeds its limit
 4. **Stores attribution data** in PostgreSQL so you can pinpoint exactly which agent caused a cost spike
 
 Works with OpenAI, Anthropic, and Google. Streaming supported. One environment variable to instrument.
@@ -29,7 +29,7 @@ Your Agent ──→ Elevation Proxy ──→ LLM Provider (OpenAI / Anthropic 
               Dashboard (React)
 ```
 
-The proxy sits on the hot path — auth, tagging, and budget check run synchronously against Redis (<1ms overhead). Cost attribution is fire-and-forget to keep p99 latency clean.
+The proxy sits on the hot path: auth, tagging, and budget check run synchronously against Redis (<1ms overhead). Cost attribution is fire-and-forget to keep p99 latency clean.
 
 ## 5-Minute Setup
 
@@ -95,16 +95,16 @@ The agent stops. You don't get the bill.
 
 ### 4. Open the dashboard
 
-`http://localhost:5173` — real-time cost breakdown by agent and team.
+`http://localhost:5173` - real-time cost breakdown by agent and team.
 
 ## Packages
 
 | Package | Port | Purpose |
 |---|---|---|
-| `@elevation/proxy` | 3001 | Drop-in LLM proxy — tagging, budget check, streaming |
+| `@elevation/proxy` | 3001 | Drop-in LLM proxy: tagging, budget check, streaming |
 | `@elevation/cost-engine` | 3002 | Cost attribution, budget enforcement, runaway detection |
 | `@elevation/dashboard` | 5173 | React dashboard for cost/budget visibility |
-| `@elevation/shared` | — | Shared types and pricing tables |
+| `@elevation/shared` | - | Shared types and pricing tables |
 
 ## Supported Providers
 
@@ -129,7 +129,7 @@ Budget scopes: `agent`, `team`. Periods: `daily`, `weekly`, `monthly`.
 
 **SDK wrappers drift.** Every provider library update can break your cost tracking. A proxy is provider-agnostic and survives model version bumps without code changes.
 
-**The proxy stops requests before they reach the provider.** SDK-level hooks fire after the network call returns — too late if an agent is already in a runaway loop burning tokens.
+**The proxy stops requests before they reach the provider.** SDK-level hooks fire after the network call returns, which is too late if an agent is already in a runaway loop burning tokens.
 
 **Language-agnostic.** One environment variable. Works with Python, TypeScript, Go, or anything that makes HTTP calls.
 

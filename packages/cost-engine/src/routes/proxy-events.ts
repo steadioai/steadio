@@ -82,7 +82,7 @@ export function createProxyEventsRouter(db: Db, redis: Redis) {
       (err: unknown) => console.error("[budget] enforcement error:", err)
     );
 
-    // Runaway detection — velocity + loop signature (async, non-blocking)
+    // Runaway detection: velocity + loop signature (async, non-blocking)
     detectRunaway(db, redis, event, cost.totalCostUsd).catch(
       (err: unknown) => console.error("[runaway] detection error:", err)
     );
@@ -111,7 +111,7 @@ async function detectRunaway(
   event: ProxyEvent,
   totalCostUsd: number
 ): Promise<void> {
-  // Skip if already open — avoid double-firing and redundant DB writes
+  // Skip if already open: avoid double-firing and redundant DB writes
   const existing = await getCircuitBreakerState(redis, event.agentId);
   if (existing.state === "open") return;
 

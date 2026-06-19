@@ -84,7 +84,7 @@ export async function checkAndEnforceBudget(
     const capUsd = Number(budget.capUsd);
     const utilizationPercent = (newSpend / capUsd) * 100;
 
-    // Kill mode — block future requests
+    // Kill mode: block future requests
     if (
       budget.enforcementMode === "kill" &&
       utilizationPercent >= 100
