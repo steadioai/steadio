@@ -152,7 +152,7 @@ pnpm --filter @elevation/cost-engine test
 
 ## Support
 
-Questions, bug reports, and feature requests: [GitHub Issues](https://github.com/Elevation-Networks/elevation/issues) or [jon@elevationnetworks.net](mailto:jon@elevationnetworks.net)
+Questions, bug reports, and feature requests: [GitHub Issues](https://github.com/Elevation-Networks/elevation/issues)
 
 ## License
 
