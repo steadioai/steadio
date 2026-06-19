@@ -19,6 +19,20 @@ Point your agents at `http://localhost:3001/openai` instead of OpenAI directly. 
 
 Works with OpenAI, Anthropic, and Google. Streaming supported. One environment variable to instrument.
 
+## Screenshots
+
+**Cost overview** - per-agent spend, 7-day trend, and live request feed:
+
+![Dashboard Overview](./docs/screenshots/dashboard-overview.png)
+
+**Budget enforcement** - set hard caps per agent or team, with kill/throttle/alert modes:
+
+![Budget Management](./docs/screenshots/dashboard-budgets.png)
+
+**Agent detail** - drill into any agent for per-model cost breakdown and real-time events:
+
+![Agent Detail](./docs/screenshots/dashboard-agent-detail.png)
+
 ## Architecture
 
 ```
