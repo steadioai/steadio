@@ -5,7 +5,7 @@ BROWSER_LIB="/paperclip/instances/default/projects/1326235e-8321-42b2-9c4d-02944
 CHROME="/paperclip/.cache/ms-playwright/chromium_headless_shell-1228/chrome-headless-shell-linux64/chrome-headless-shell"
 FONTS_DIR="/paperclip/instances/default/projects/1326235e-8321-42b2-9c4d-02944611ec34/66aa5a9e-58e5-4540-91f2-582ac8f98075/_default/artifacts/elea-74/local-fonts.conf"
 OUT_DIR="$(dirname "$0")/../docs/screenshots"
-TMP_DIR="$(mktemp -d)"
+export TMP_DIR="$(mktemp -d)"
 
 export LD_LIBRARY_PATH="$BROWSER_LIB"
 export FONTCONFIG_FILE="$FONTS_DIR"

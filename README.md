@@ -122,6 +122,8 @@ The agent stops. You don't get the bill.
 
 `http://localhost:5173` - real-time cost breakdown by agent and team.
 
+![Elevation dashboard showing cost breakdown by agent with live cost events and budget utilization](docs/screenshots/dashboard-overview.png)
+
 ## Packages
 
 | Package | Port | Purpose |
