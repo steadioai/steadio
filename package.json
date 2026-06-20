@@ -1,0 +1,31 @@
+{
+  "name": "steadio",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Agent Reliability Control Plane: LLM proxy, cost attribution, budget enforcement, runaway detection",
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter './packages/**' build",
+    "dev": "pnpm --parallel -r dev",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "clean": "pnpm -r clean && rm -rf node_modules"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.4.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "pnpm": {
+    "overrides": {
+      "esbuild": ">=0.25.0"
+    }
+  }
+}

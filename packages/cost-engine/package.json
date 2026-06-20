@@ -1,0 +1,32 @@
+{
+  "name": "@steadio/cost-engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "node --watch dist/server.js",
+    "start": "node dist/server.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@steadio/shared": "workspace:*",
+    "@hono/node-server": "^1.12.0",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.4.0",
+    "ioredis": "^5.3.0",
+    "pg": "^8.11.0",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.0",
+    "@types/uuid": "^9.0.0",
+    "drizzle-kit": "^0.31.10",
+    "typescript": "^5.4.0",
+    "vitest": "^3.2.6"
+  }
+}

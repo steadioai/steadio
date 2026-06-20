@@ -1,0 +1,50 @@
+version: "3.9"
+# Merge with docker-compose.yml:
+#   docker compose -f docker-compose.yml -f docker-compose.test.yml up --abort-on-container-exit --exit-code-from test-runner
+
+services:
+  mock-upstream:
+    build:
+      context: .
+      dockerfile: test/e2e/Dockerfile.mock
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Override proxy to point at mock upstream instead of real OpenAI/Anthropic
+  proxy:
+    environment:
+      OPENAI_API_URL: http://mock-upstream:8080
+      ANTHROPIC_API_URL: http://mock-upstream:8080
+      GOOGLE_API_URL: http://mock-upstream:8080
+    depends_on:
+      mock-upstream:
+        condition: service_healthy
+
+  # Add healthcheck to dashboard so test-runner can depend on it
+  dashboard:
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:80/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  test-runner:
+    build:
+      context: .
+      dockerfile: test/e2e/Dockerfile.runner
+    environment:
+      PROXY_URL: http://proxy:3001
+      CE_URL: http://cost-engine:3002
+      DB_URL: postgresql://steadio:steadio_dev@db:5432/steadio
+    depends_on:
+      proxy:
+        condition: service_healthy
+      cost-engine:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      mock-upstream:
+        condition: service_healthy
