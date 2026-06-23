@@ -88,7 +88,7 @@ Save the `key` value — it is only shown once.
 export OPENAI_BASE_URL=http://localhost:3001/openai
 ```
 
-Or in code (Python openai SDK):
+Python:
 
 ```python
 import openai
@@ -102,13 +102,27 @@ client = openai.OpenAI(
 )
 ```
 
+TypeScript/Node.js:
+
+```typescript
+import OpenAI from "openai";
+const client = new OpenAI({
+  baseURL: "http://localhost:3001/openai",
+  apiKey: process.env.OPENAI_API_KEY,
+  defaultHeaders: {
+    "X-SteadIO-Key": "el_myteam_<suffix>",
+    "X-Agent-Id": "my-agent",
+  },
+});
+```
+
 **Anthropic agents:**
 
 ```bash
 export ANTHROPIC_BASE_URL=http://localhost:3001/anthropic
 ```
 
-Or in code (Python anthropic SDK):
+Python:
 
 ```python
 import anthropic
@@ -120,6 +134,20 @@ client = anthropic.Anthropic(
         "X-Agent-Id": "my-agent",
     },
 )
+```
+
+TypeScript/Node.js:
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk";
+const client = new Anthropic({
+  baseURL: "http://localhost:3001/anthropic",
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  defaultHeaders: {
+    "X-SteadIO-Key": "el_myteam_<suffix>",
+    "X-Agent-Id": "my-agent",
+  },
+});
 ```
 
 **Header reference:**

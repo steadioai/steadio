@@ -38,7 +38,7 @@ export function createAuthMiddleware(costEngineUrl: string, redis: Redis) {
       return c.json(
         {
           error: "missing_api_key",
-          hint: "Add the 'X-SteadIO-Key: <your-key>' header. Create a key with: POST http://<cost-engine-host>/api/keys",
+          hint: "Add the 'X-SteadIO-Key: <your-key>' header. Create a key with: POST http://localhost:3002/api/keys",
         },
         401
       );
@@ -65,7 +65,7 @@ export function createAuthMiddleware(costEngineUrl: string, redis: Redis) {
         return c.json(
           {
             error: "invalid_or_revoked_key",
-            hint: "The X-SteadIO-Key value was not recognized. Check the key or create a new one at POST http://<cost-engine-host>/api/keys",
+            hint: "The X-SteadIO-Key value was not recognized. Check the key or create a new one at POST http://localhost:3002/api/keys",
           },
           401
         );

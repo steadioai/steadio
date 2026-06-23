@@ -48,14 +48,14 @@ export const MODEL_PRICING: ModelPricing[] = [
   },
   {
     provider: "anthropic",
-    model: "claude-haiku-4-5-20251001",
+    model: "claude-haiku-4-5",
     inputCostPer1kTokens: 0.0008,
     outputCostPer1kTokens: 0.004,
     updatedAt: new Date("2025-01-01"),
   },
   {
     provider: "anthropic",
-    model: "claude-3-5-sonnet-20241022",
+    model: "claude-3-5-sonnet",
     inputCostPer1kTokens: 0.003,
     outputCostPer1kTokens: 0.015,
     cacheReadCostPer1kTokens: 0.0003,
@@ -64,7 +64,7 @@ export const MODEL_PRICING: ModelPricing[] = [
   },
   {
     provider: "anthropic",
-    model: "claude-3-5-haiku-20241022",
+    model: "claude-3-5-haiku",
     inputCostPer1kTokens: 0.0008,
     outputCostPer1kTokens: 0.004,
     cacheReadCostPer1kTokens: 0.00008,

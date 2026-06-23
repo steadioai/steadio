@@ -154,10 +154,10 @@ The agent stops. You don't get the bill.
 | Provider | Models |
 |---|---|
 | OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo |
-| Anthropic | claude-opus-4-8, claude-sonnet-4-6, claude-haiku-4-5, claude-3-5-sonnet |
+| Anthropic | claude-opus-4-8, claude-sonnet-4-6, claude-haiku-4-5, claude-3-5-sonnet, claude-3-5-haiku |
 | Google (roadmap) | gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash |
 
-Prefix matching handles versioned model names (e.g. `gpt-4o-2024-08-06` → `gpt-4o`).
+Prefix matching handles versioned model names — `claude-3-5-sonnet-20241022` resolves to `claude-3-5-sonnet` pricing automatically. No code changes needed when providers release new versions.
 
 ## Budget Enforcement Modes
 
@@ -167,6 +167,19 @@ Prefix matching handles versioned model names (e.g. `gpt-4o-2024-08-06` → `gpt
 | `warn` | Allows request, fires alert at `warningThresholdPercent` |
 
 Budget scopes: `agent`, `team`. Periods: `daily`, `weekly`, `monthly`.
+
+SteadIO also detects runaway agents (velocity spike or repeated identical prompts) and opens a circuit breaker before a budget cap is set. The response is HTTP 429:
+
+```json
+{
+  "error": "circuit_open",
+  "agent_id": "my-agent",
+  "reason": "velocity",
+  "retry_after": "2026-06-18T01:00:00.000Z"
+}
+```
+
+The agent is blocked until the cooldown expires. You can inspect and reset circuit state from the dashboard.
 
 ## Why a proxy instead of SDK instrumentation?
 

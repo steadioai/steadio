@@ -136,7 +136,7 @@ banner "Generating API key..."
 KEY_RESP=$(curl -sf -X POST "$COST_ENGINE_URL/api/keys" \
   -H "Content-Type: application/json" \
   -d '{"teamId": "demo", "name": "Demo key"}')
-DEMO_KEY=$(echo "$KEY_RESP" | python3 -c "import sys,json; print(json.load(sys.stdin)['key'])" 2>/dev/null || echo "")
+DEMO_KEY=$(echo "$KEY_RESP" | grep -o '"key":"el_[^"]*"' | head -1 | sed 's/"key":"//;s/"//')
 
 if [ -n "$DEMO_KEY" ]; then
   step "API key created: $DEMO_KEY"
