@@ -41,13 +41,12 @@ API keys are validated against the database on every request. Keys must be regis
 |-----------|--------------------------------------|
 | OpenAI    | `http://localhost:3001/openai`       |
 | Anthropic | `http://localhost:3001/anthropic`    |
-| Google    | `http://localhost:3001/google`       |
 
 For OpenAI-compatible SDKs, set `base_url` to `http://localhost:3001/openai`. For Anthropic SDK, set `base_url` to `http://localhost:3001/anthropic`.
 
 ### Is Gemini / Google supported?
 
-Yes. Google Gemini models (gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash) are supported. Route requests to `http://localhost:3001/google`.
+Google Gemini proxy routing is on the roadmap. Cost attribution for Google events is already implemented in the cost engine (the dashboard can track and display Gemini spend), but live proxy routing through `http://localhost:3001/google` is not yet available. Follow the [GitHub repo](https://github.com/steadioai/steadio) for updates.
 
 ### I get a 404 calling the proxy. What's wrong?
 
@@ -102,7 +101,7 @@ If cost still does not appear, check that `X-Agent-Id` is set. Untagged requests
 
 ### Anthropic
 
-`claude-opus-4-8`, `claude-sonnet-4-6`, `claude-haiku-4-5-20251001`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, plus versioned variants.
+`claude-opus-4-8`, `claude-sonnet-4-6`, `claude-haiku-4-5`, `claude-3-5-sonnet`, `claude-3-5-haiku`. Version-dated variants (e.g. `claude-3-5-sonnet-20241022`) automatically prefix-match to the base model for pricing.
 
 ### What happens if I use a model not in the pricing table?
 
