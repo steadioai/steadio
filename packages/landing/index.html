@@ -559,10 +559,8 @@
           if (val) {
             utmProps[key] = val;
             hasUtm = true;
-            // Persist so subsequent pages / events carry the attribution
             try { sessionStorage.setItem('steadio_' + key, val); } catch (_) {}
           } else {
-            // Recover from session if not in URL
             try {
               var stored = sessionStorage.getItem('steadio_' + key);
               if (stored) { utmProps[key] = stored; hasUtm = true; }
@@ -570,11 +568,39 @@
           }
         });
 
-        // Fire a page view with UTM props when Plausible is ready
-        // (Plausible fires the default pageview automatically; we enrich it via
-        //  a custom pageview-with-utm event only when UTM params are present)
+        // ── Self-hosted analytics beacon ────────────────────────────────────────
+        // Sends events to SteadIO's own cost-engine so tracking works even before
+        // a Plausible account is configured. Fires fire-and-forget; never blocks.
+        var BEACON_URL = 'https://api.steadio.ai/api/analytics/collect';
+
+        function beacon(event, extraProps) {
+          var payload = Object.assign({
+            event: event,
+            page: window.location.pathname,
+            referrer: document.referrer || null,
+          }, utmProps, extraProps || {});
+          // Use sendBeacon when available (non-blocking, survives page unload)
+          if (navigator.sendBeacon) {
+            var blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+            navigator.sendBeacon(BEACON_URL, blob);
+          } else {
+            fetch(BEACON_URL, {
+              method: 'POST', body: JSON.stringify(payload),
+              headers: { 'Content-Type': 'application/json' },
+              keepalive: true,
+            }).catch(function () {});
+          }
+        }
+
+        // ── Plausible helpers ──────────────────────────────────────────────────
+        function plausibleEvent(name, props) {
+          window.plausible(name, { props: props });
+        }
+
+        // Fire pageview events
+        beacon('pageview');
         if (hasUtm) {
-          window.plausible('Pageview with UTM', { props: utmProps });
+          plausibleEvent('Pageview with UTM', utmProps);
         }
 
         // ── Click event tracking ───────────────────────────────────────────────
@@ -594,7 +620,8 @@
           var trackKey = el.getAttribute('data-track');
           var eventName = EVENT_MAP[trackKey] || trackKey;
           var props = Object.assign({ location: trackKey }, utmProps);
-          window.plausible(eventName, { props: props });
+          plausibleEvent(eventName, props);
+          beacon(eventName, { props: props });
         });
       })();
     </script>

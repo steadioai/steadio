@@ -117,6 +117,22 @@ export const runaways = pgTable("runaway_events", {
   detectedAt: timestamp("detected_at").defaultNow().notNull(),
 });
 
+export const landingEvents = pgTable("landing_events", {
+  id: text("id").primaryKey(),
+  event: text("event").notNull(),
+  page: text("page"),
+  referrer: text("referrer"),
+  utmSource: text("utm_source"),
+  utmMedium: text("utm_medium"),
+  utmCampaign: text("utm_campaign"),
+  utmContent: text("utm_content"),
+  utmTerm: text("utm_term"),
+  props: jsonb("props"),
+  ipHash: text("ip_hash"),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const alertConfigs = pgTable("alert_configs", {
   id: text("id").primaryKey(),
   teamId: text("team_id").notNull(),
