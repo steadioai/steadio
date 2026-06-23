@@ -47,9 +47,9 @@ Your Agent ──→ SteadIO Proxy ──→ LLM Provider (OpenAI / Anthropic)
 
 The proxy sits on the hot path: auth, tagging, and budget check run synchronously against Redis (<1ms overhead). Cost attribution is fire-and-forget to keep p99 latency clean.
 
-## 5-Minute Setup
+## Quick Start
 
-### 0. One-command demo (no API keys needed)
+### Option A: Zero-config demo (no API keys needed)
 
 ```bash
 git clone https://github.com/steadioai/steadio
@@ -57,9 +57,13 @@ cd steadio
 make demo
 ```
 
-This starts all services and seeds sample multi-agent cost data so the dashboard is populated immediately.
+Starts all services, seeds 12 sample cost events across 2 teams and 6 agents, and prints the dashboard URL. Open `http://localhost:5173` to see cost attribution immediately.
 
-### 1. Clone and start the stack
+---
+
+### Option B: Manual integration (5 steps)
+
+**1. Start the stack**
 
 ```bash
 git clone https://github.com/steadioai/steadio
@@ -69,7 +73,7 @@ docker compose up -d
 
 Starts proxy (3001), cost engine (3002), dashboard (5173), PostgreSQL, and Redis.
 
-### 2. Create an API key
+**2. Create an API key**
 
 ```bash
 curl -s -X POST http://localhost:3002/api/keys \
@@ -77,9 +81,11 @@ curl -s -X POST http://localhost:3002/api/keys \
   -d '{"teamId": "myteam", "name": "dev key"}'
 ```
 
-Save the `key` value from the response — it is only shown once.
+Save the `key` value — it is only shown once.
 
-### 3. Point your agent at the proxy
+**3. Point your agent at the proxy**
+
+Set the base URL to the SteadIO proxy and add two identification headers:
 
 **OpenAI:**
 ```bash
@@ -91,16 +97,16 @@ export OPENAI_BASE_URL=http://localhost:3001/openai
 export ANTHROPIC_BASE_URL=http://localhost:3001/anthropic
 ```
 
-Add two headers to identify your agent:
-```
-X-SteadIO-Key: el_<teamId>_<apiKey>
-X-Agent-Id: my-agent
-X-Team-Id: my-team
-```
+Add these headers to every request (or set them in your SDK client config):
 
-No other code changes. Your existing SDK calls pass through unchanged.
+| Header | Value | Purpose |
+|---|---|---|
+| `X-SteadIO-Key` | `el_myteam_<suffix>` | Authenticates to SteadIO |
+| `X-Agent-Id` | `my-agent` | Tags the request for cost attribution |
 
-### 4. Set a budget cap
+Your existing provider `Authorization` / `x-api-key` headers pass through to the upstream unchanged. No other code changes.
+
+**4. Set a budget cap**
 
 ```bash
 curl -X POST http://localhost:3002/api/budgets \
@@ -128,9 +134,9 @@ When the agent hits $10, the proxy returns HTTP 402:
 
 The agent stops. You don't get the bill.
 
-### 5. Open the dashboard
+**5. Open the dashboard**
 
-`http://localhost:5173` - real-time cost breakdown by agent and team.
+`http://localhost:5173` — real-time cost breakdown by agent and team.
 
 ![SteadIO dashboard showing cost breakdown by agent with live cost events and budget utilization](docs/screenshots/dashboard-overview.png)
 

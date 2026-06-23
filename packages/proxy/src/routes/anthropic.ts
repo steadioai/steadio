@@ -86,7 +86,14 @@ export function createAnthropicRouter(deps: ProxyDeps) {
     });
 
     if (!upstream) {
-      return c.json({ error: "upstream_unavailable" }, 502);
+      return c.json(
+        {
+          error: "upstream_unavailable",
+          hint: "Could not reach the Anthropic API. Check that ANTHROPIC_API_URL is correct and the upstream is reachable from this container.",
+          upstream_url: upstreamUrl,
+        },
+        502
+      );
     }
 
     if (isStreaming) {

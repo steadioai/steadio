@@ -1,140 +1,190 @@
-# Quick Start Guide
+# Quick Start: From Zero to Cost Attribution in 5 Minutes
 
-Get SteadIO running locally in under 10 minutes.
+No API keys required for the demo path. You can see real cost attribution with `make demo` and seeded data before connecting a live agent.
 
 ## Prerequisites
 
 - Docker and Docker Compose
 - Git
-- API keys for at least one LLM provider (OpenAI or Anthropic)
 
-## 1. Clone and Start
+---
+
+## Step 1: Clone and launch
 
 ```bash
 git clone https://github.com/steadioai/steadio
 cd steadio
-docker compose up -d
+make demo
 ```
 
-Docker Compose starts four services:
+`make demo` starts all services, waits for them to be healthy, seeds 12 sample cost events across 2 teams and 6 agents, and prints a demo API key.
 
-| Service      | Port | Purpose                              |
-|--------------|------|--------------------------------------|
-| proxy        | 3001 | LLM proxy (OpenAI-compatible)        |
-| cost-engine  | 3002 | Cost attribution and budget engine   |
-| dashboard    | 5173 | Web dashboard                        |
-| db           | 5432 | PostgreSQL (TimescaleDB)             |
-| redis        | 6379 | Budget state and circuit breaker     |
+Expected output:
 
-Wait for all services to be healthy:
+```
+SteadIO - Demo
 
-```bash
-docker compose ps
+Starting services...
+  + Docker Compose started
+
+Waiting for services to be healthy...
+  + Proxy is healthy
+  + Cost Engine is healthy
+
+Seeding demo data...
+  + Seeded 12 sample cost events across 2 teams and 6 agents
+  + Created daily budget: code-agent capped at $5.00/day
+
+Demo ready!
+
+  Dashboard:    http://localhost:5173
+  Proxy:        http://localhost:3001
+  Cost Engine:  http://localhost:3002
 ```
 
-You should see all services as `healthy` within about 30 seconds.
+---
 
-## 2. Verify Services Are Up
+## Step 2: Verify services are healthy
 
 ```bash
-# Proxy health
 curl http://localhost:3001/health
-
-# Cost engine health
 curl http://localhost:3002/health
-
-# Dashboard - open in browser
-open http://localhost:5173
 ```
 
-## 3. Create Your API Key
+Both should return `{"status":"ok"}`. If either fails, check `docker compose ps` and look for unhealthy services, then run `docker compose logs <service-name>` for details.
 
-Create a key via the cost-engine API. Supply your team ID (any short identifier) and an optional name:
+---
+
+## Step 3: Open the dashboard
+
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+You should see:
+- 2 teams (`acme` and `startup`) with cost breakdown
+- 6 agents with per-model spend
+- A daily budget cap on `code-agent` showing utilization
+
+This is all seeded data — no real API calls were made.
+
+---
+
+## Step 4: Point your agent at the proxy
+
+When you're ready to route live traffic, change your agent's base URL and add two identification headers.
+
+**Create your API key first:**
 
 ```bash
 curl -s -X POST http://localhost:3002/api/keys \
   -H "Content-Type: application/json" \
-  -d '{"teamId": "mycompany", "name": "My first key"}'
+  -d '{"teamId": "myteam", "name": "my key"}'
 ```
 
-Response:
+Save the `key` value — it is only shown once.
+
+**OpenAI agents:**
+
+```bash
+export OPENAI_BASE_URL=http://localhost:3001/openai
+```
+
+Or in code (Python openai SDK):
+
+```python
+import openai
+client = openai.OpenAI(
+    base_url="http://localhost:3001/openai",
+    api_key=os.environ["OPENAI_API_KEY"],
+    default_headers={
+        "X-SteadIO-Key": "el_myteam_<suffix>",
+        "X-Agent-Id": "my-agent",
+    },
+)
+```
+
+**Anthropic agents:**
+
+```bash
+export ANTHROPIC_BASE_URL=http://localhost:3001/anthropic
+```
+
+Or in code (Python anthropic SDK):
+
+```python
+import anthropic
+client = anthropic.Anthropic(
+    base_url="http://localhost:3001/anthropic",
+    api_key=os.environ["ANTHROPIC_API_KEY"],
+    default_headers={
+        "X-SteadIO-Key": "el_myteam_<suffix>",
+        "X-Agent-Id": "my-agent",
+    },
+)
+```
+
+**Header reference:**
+
+| Header | Required | Description |
+|---|---|---|
+| `X-SteadIO-Key` | Yes | Your SteadIO API key (`el_<teamId>_<suffix>`) |
+| `X-Agent-Id` | Yes | Identifies which agent made the request |
+| `X-Team-Id` | No | Override team derived from the key |
+| `X-Workflow-Id` | No | Tag requests to a specific workflow run |
+
+Your existing provider `Authorization: Bearer` (OpenAI) or `x-api-key` (Anthropic) headers pass through to the upstream unchanged.
+
+---
+
+## Step 5: Set a budget cap
+
+Stop runaway agents before they generate a surprise bill:
+
+```bash
+curl -X POST http://localhost:3002/api/budgets \
+  -H "Content-Type: application/json" \
+  -d '{
+    "scope": "agent",
+    "scopeId": "my-agent",
+    "period": "daily",
+    "capUsd": 10.00,
+    "enforcementMode": "kill"
+  }'
+```
+
+When `my-agent` hits $10 in a day, the proxy returns HTTP 402:
 
 ```json
 {
-  "key": "el_mycompany_<random>",
-  "id": "...",
-  "teamId": "mycompany",
-  "name": "My first key",
-  "createdAt": "..."
+  "error": "budget_exceeded",
+  "agent_id": "my-agent",
+  "cap_amount": 10.00,
+  "current_spend": 10.05,
+  "reset_at": "2026-06-19T00:00:00.000Z"
 }
 ```
 
-The `key` field is only returned once — save it. Your team is created automatically if it doesn't exist.
+The agent stops immediately. The error is returned before the upstream provider is called, so you are not charged for the blocked request.
 
-To list existing keys:
+---
 
-```bash
-curl http://localhost:3002/api/keys?teamId=mycompany
-```
+## Troubleshooting
 
-To revoke a key:
+**`401 missing_api_key`** — Add the `X-SteadIO-Key` header. Create a key with `POST http://localhost:3002/api/keys`.
 
-```bash
-curl -X DELETE http://localhost:3002/api/keys/<id>
-```
+**`401 invalid_or_revoked_key`** — The key was not recognized. Double-check the value or create a new one.
 
-## 4. Make Your First Request
+**`502 upstream_unavailable`** — SteadIO could not reach the provider API. Check that your provider API key is valid and that Docker has outbound internet access.
 
-Test the proxy with a direct curl call. You will need your own provider API key (e.g., your OpenAI key).
+**`404 not_found`** — Wrong proxy path. Use `/openai/...` for OpenAI requests and `/anthropic/...` for Anthropic requests.
 
-```bash
-curl http://localhost:3001/openai/chat/completions \
-  -H "Content-Type: application/json" \
-  -H "X-SteadIO-Key: el_mycompany_abc123" \
-  -H "X-Agent-Id: my-first-agent" \
-  -H "Authorization: Bearer $OPENAI_API_KEY" \
-  -d '{
-    "model": "gpt-4o-mini",
-    "messages": [{ "role": "user", "content": "Hello, world!" }]
-  }'
-```
+**`402 budget_exceeded`** — The agent or team has exceeded its cap. Check the dashboard for current spend, or wait for the reset period.
 
-### What these headers do
+**Services not healthy after `docker compose up`** — Run `docker compose logs db` to check if TimescaleDB initialized correctly. The first pull can take 30-60 seconds.
 
-| Header              | Required | Description                                        |
-|---------------------|----------|----------------------------------------------------|
-| `X-SteadIO-Key`   | Yes      | Your SteadIO API key (`el_<teamId>_<suffix>`)    |
-| `X-Agent-Id`        | Yes      | Identifies which agent made the request            |
-| `Authorization`     | Yes      | Your upstream provider API key (unchanged)         |
-| `X-Team-Id`         | No       | Override the team extracted from the key           |
-| `X-Workflow-Id`     | No       | Tag requests to a specific workflow run            |
-
-## 5. View Your Data in the Dashboard
-
-Open [http://localhost:5173](http://localhost:5173) and navigate to the **Agents** page. After your first request, your agent and team will appear automatically, no manual registration required.
-
-## 6. Configure a Second Provider (Anthropic)
-
-Anthropic requests use a different route prefix:
-
-```bash
-curl http://localhost:3001/anthropic/v1/messages \
-  -H "Content-Type: application/json" \
-  -H "X-SteadIO-Key: el_mycompany_abc123" \
-  -H "X-Agent-Id: my-first-agent" \
-  -H "x-api-key: $ANTHROPIC_API_KEY" \
-  -H "anthropic-version: 2023-06-01" \
-  -d '{
-    "model": "claude-haiku-4-5-20251001",
-    "max_tokens": 256,
-    "messages": [{ "role": "user", "content": "Hello!" }]
-  }'
-```
-
-The provider-specific auth headers (`Authorization: Bearer` for OpenAI, `x-api-key` for Anthropic) are passed through to the upstream provider unchanged. SteadIO only reads `X-SteadIO-Key`.
+---
 
 ## Next Steps
 
-- **[Integration Guide](./integration-guide.md)**: Point your existing Python or Node.js LLM clients at SteadIO in minutes.
-- **[Feature Walkthrough](./feature-walkthrough.md)**: Cost attribution, budgets, alerts, and runaway detection.
-- **[FAQ](./faq.md)**: Troubleshooting, streaming support, supported models.
+- **[Integration Guide](./integration-guide.md)** — Point existing Python or Node.js LLM clients at SteadIO.
+- **[Feature Walkthrough](./feature-walkthrough.md)** — Cost attribution, budgets, alerts, and runaway detection in depth.
+- **[FAQ](./faq.md)** — Streaming support, supported models, common questions.
