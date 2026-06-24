@@ -142,6 +142,19 @@ The agent stops. You don't get the bill.
 
 ![SteadIO dashboard showing cost breakdown by agent with live cost events and budget utilization](docs/screenshots/dashboard-overview.png)
 
+## Framework Examples
+
+Working integration examples for the most popular AI frameworks are in [`examples/`](./examples/):
+
+| Example | Framework | Setup |
+|---|---|---|
+| [`examples/openai-python/`](./examples/openai-python/) | OpenAI Python SDK | `base_url` + two headers |
+| [`examples/langchain/`](./examples/langchain/) | LangChain | `openai_api_base` + `default_headers` on `ChatOpenAI` |
+| [`examples/llamaindex/`](./examples/llamaindex/) | LlamaIndex | Custom `openai.OpenAI` client passed to LlamaIndex |
+| [`examples/multi-agent/`](./examples/multi-agent/) | Any framework | Per-agent `X-Agent-Id` for cost attribution by agent |
+
+All examples work against the demo instance (`make demo`) and require a real OpenAI API key for upstream calls.
+
 ## Packages
 
 | Package | Port | Purpose |
