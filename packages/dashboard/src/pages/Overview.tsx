@@ -43,9 +43,9 @@ export function OverviewPage() {
   }));
 
   return (
-    <div style={{ padding: "24px", fontFamily: "system-ui, sans-serif" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-        <h1 style={{ margin: 0, fontSize: 24 }}>Overview</h1>
+    <div style={{ padding: "28px", fontFamily: "'Inter', system-ui, sans-serif" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 28 }}>
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 800, color: "#0f172a", letterSpacing: "-0.5px" }}>Overview</h1>
 
         {/* Live indicator */}
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: connected ? "#00c9a7" : "#aaa" }}>
@@ -86,8 +86,8 @@ export function OverviewPage() {
 
       {/* Cost trend chart */}
       {historyFormatted.length > 0 && (
-        <div style={{ background: "white", border: "1px solid #eee", borderRadius: 8, padding: 20, marginBottom: 24 }}>
-          <h2 style={{ margin: "0 0 16px", fontSize: 15, color: "#555" }}>Cost Trend</h2>
+        <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, padding: "22px 24px", marginBottom: 24, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <h2 style={{ margin: "0 0 16px", fontSize: 14, color: "#64748b", fontWeight: 600 }}>Cost Trend</h2>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={historyFormatted}>
               <defs>
@@ -108,10 +108,10 @@ export function OverviewPage() {
 
       {/* Live event feed */}
       {liveEvents.length > 0 && (
-        <div style={{ background: "white", border: "1px solid #eee", borderRadius: 8, marginBottom: 24, overflow: "hidden" }}>
-          <div style={{ padding: "12px 16px", borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, marginBottom: 24, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+          <div style={{ padding: "14px 20px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00c9a7" }} />
-            <h2 style={{ margin: 0, fontSize: 14, color: "#555" }}>Live Cost Events</h2>
+            <h2 style={{ margin: 0, fontSize: 14, color: "#64748b", fontWeight: 600 }}>Live Cost Events</h2>
           </div>
           <div style={{ maxHeight: 200, overflowY: "auto" }}>
             {liveEvents.map((e, i) => (
@@ -132,9 +132,9 @@ export function OverviewPage() {
       )}
 
       {/* Agent table */}
-      <div style={{ background: "white", border: "1px solid #eee", borderRadius: 8, overflow: "hidden" }}>
-        <div style={{ padding: "16px", borderBottom: "1px solid #eee" }}>
-          <h2 style={{ margin: 0, fontSize: 16 }}>Top Agents by Cost</h2>
+      <div style={{ background: "white", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
+        <div style={{ padding: "18px 24px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#0f172a" }}>Top Agents by Cost</h2>
         </div>
         {loading ? (
           <div style={{ padding: 24, color: "#888" }}>Loading...</div>
@@ -194,9 +194,15 @@ export function OverviewPage() {
 
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ background: "white", border: "1px solid #eee", borderRadius: 8, padding: 20 }}>
-      <div style={{ fontSize: 13, color: "#888", marginBottom: 8 }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -1 }}>{value}</div>
+    <div style={{
+      background: "white",
+      border: "1px solid rgba(0,0,0,0.06)",
+      borderRadius: 12,
+      padding: "22px 24px",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+    }}>
+      <div style={{ fontSize: 13, color: "#94a3b8", marginBottom: 8, fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 700, letterSpacing: -1, color: "#0f172a" }}>{value}</div>
     </div>
   );
 }
