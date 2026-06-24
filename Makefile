@@ -1,6 +1,6 @@
 .PHONY: demo dev build test smoke-test clean help
 
-## Run full demo: start services, seed data, print dashboard URL
+## Run full demo: zero-config, seeds data, opens dashboard
 demo:
 	@./scripts/demo.sh
 
@@ -20,9 +20,9 @@ test:
 smoke-test:
 	@./scripts/smoke-test.sh
 
-## Stop and remove all containers and volumes
+## Stop all containers and remove volumes (use after demo or dev)
 clean:
-	docker compose down -v
+	docker compose --profile demo down -v
 	pnpm clean
 
 ## Show available targets

@@ -57,7 +57,9 @@ cd steadio
 make demo
 ```
 
-Starts all services, seeds 12 sample cost events across 2 teams and 6 agents, and prints the dashboard URL. Open `http://localhost:5173` to see cost attribution immediately.
+Starts all services, seeds historical cost data across 2 teams and 6 agents, and launches a synthetic traffic generator that keeps posting new events every 5 seconds. Open `http://localhost:5173` to see live cost attribution immediately.
+
+When done: `make clean`
 
 ---
 

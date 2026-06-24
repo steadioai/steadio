@@ -80,5 +80,21 @@ services:
     depends_on:
       - cost-engine
 
+  # Synthetic traffic generator — only starts under the "demo" profile.
+  # Posts a cost event every 5 seconds so the live feed stays active.
+  demo-seeder:
+    image: alpine:3.20
+    command: sh -c "apk add --no-cache curl >/dev/null 2>&1 && sh /demo-traffic.sh"
+    volumes:
+      - ./scripts/demo-traffic.sh:/demo-traffic.sh:ro
+    environment:
+      COST_ENGINE_URL: http://cost-engine:3002
+      INTERVAL: "5"
+    depends_on:
+      cost-engine:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles: [demo]
+
 volumes:
   postgres_data:
