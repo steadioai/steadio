@@ -21,17 +21,13 @@ Works with OpenAI and Anthropic. Streaming supported. One environment variable t
 
 ## Screenshots
 
-**Cost overview** - per-agent spend, 7-day trend, and live request feed:
+**Live cost overview** - sample workspace with spend trends, model mix, workflow attribution, and agent-level breakdowns:
 
-![Dashboard Overview](./docs/screenshots/dashboard-overview.png)
+![SteadIO live cost overview showing spend trends, model mix, workflow attribution, and agent costs](./docs/screenshots/demo-dashboard.png)
 
-**Budget enforcement** - set hard caps per agent or team, with kill/throttle/alert modes:
+**Design partner onboarding** - the quickstart flow for connecting agents to the SteadIO proxy:
 
-![Budget Management](./docs/screenshots/dashboard-budgets.png)
-
-**Agent detail** - drill into any agent for per-model cost breakdown and real-time events:
-
-![Agent Detail](./docs/screenshots/dashboard-agent-detail.png)
+![SteadIO onboarding quickstart showing proxy endpoint, API key handling, and SDK configuration](./docs/screenshots/onboarding-quickstart.png)
 
 ## Architecture
 
@@ -140,7 +136,7 @@ The agent stops. You don't get the bill.
 
 `http://localhost:5173` — real-time cost breakdown by agent and team.
 
-![SteadIO dashboard showing cost breakdown by agent with live cost events and budget utilization](docs/screenshots/dashboard-overview.png)
+![SteadIO dashboard showing spend trends, model mix, workflow attribution, and agent costs](docs/screenshots/demo-dashboard.png)
 
 ## Framework Examples
 
