@@ -12,7 +12,8 @@ GATEWAY_TOKEN="gw-scoped-token-only-calls-proxy-789"
 # listening. Falls back to 8717 if that lookup fails.
 PROXY_PORT="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()' 2>/dev/null || echo 8717)"
 TOKENS_FILE="$(mktemp)"
-trap 'rm -f "$TOKENS_FILE"' EXIT
+PROXY_LOG="$(mktemp)"
+trap 'rm -f "$TOKENS_FILE" "$PROXY_LOG"' EXIT
 
 # The proxy's token store: this one token is active and scoped to the single
 # route the proxy serves. Editing this file is how an operator rotates.
@@ -43,18 +44,23 @@ line
 echo "ARCHITECTURE B: network-proxy"
 echo "The provider key lives only in the proxy process. The app holds a scoped token."
 line
-# Start the proxy WITH the provider key, in its own isolated process.
+# Start the proxy WITH the provider key, in its own isolated process. We send
+# its output to a log file rather than letting it inherit this script's stdout/
+# stderr. That is the difference between a clean exit and a hang: a backgrounded
+# proxy that holds the pipe open keeps a downstream reader (./run_demo.sh | tee
+# log) waiting on EOF forever, even after all output is printed.
 run_clean PROVIDER_API_KEY="$PROVIDER_API_KEY" TOKENS_FILE="$TOKENS_FILE" PROXY_PORT="$PROXY_PORT" \
-  python3 proxy_server.py &
+  python3 proxy_server.py >/dev/null 2>"$PROXY_LOG" &
 PROXY_PID=$!
-trap 'kill "$PROXY_PID" 2>/dev/null || true; rm -f "$TOKENS_FILE"' EXIT
-# Give the proxy a moment to bind.
+trap 'kill "$PROXY_PID" 2>/dev/null || true; rm -f "$TOKENS_FILE" "$PROXY_LOG"' EXIT
+# Give the proxy a moment to bind, then surface its startup line ourselves.
 for _ in 1 2 3 4 5 10 20; do
   if python3 -c "import socket,sys; s=socket.socket(); sys.exit(0 if s.connect_ex(('127.0.0.1',$PROXY_PORT))==0 else 1)" 2>/dev/null; then
     break
   fi
   sleep 0.2
 done
+cat "$PROXY_LOG" >&2
 # The app runs WITHOUT the provider key in its environment. Only the gateway token.
 run_clean GATEWAY_TOKEN="$GATEWAY_TOKEN" PROXY_PORT="$PROXY_PORT" python3 app_proxy.py
 echo
