@@ -18,6 +18,7 @@ TOKEN_V2="gw-app-token-v2-rotated-clean-abc456"
 # listening. Falls back to 8722 if that lookup fails.
 PROXY_PORT="$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); print(s.getsockname()[1]); s.close()' 2>/dev/null || echo 8722)"
 TOKENS_FILE="$(mktemp)"
+PROXY_LOG="$(mktemp)"
 
 line() { printf '%s\n' "------------------------------------------------------------"; }
 DEMO_PATH="$PATH"
@@ -50,16 +51,20 @@ PY
 cat > "$TOKENS_FILE" <<JSON
 { "$TOKEN_V1": { "scope": "chat:completions", "active": true } }
 JSON
+# Send proxy output to a log file rather than letting it inherit this script's
+# stdout/stderr. A backgrounded proxy holding the pipe open would make piping the
+# demo (./rotate_demo.sh | tee log) hang on EOF after all output is printed.
 run_clean PROVIDER_API_KEY="$PROVIDER_API_KEY" TOKENS_FILE="$TOKENS_FILE" PROXY_PORT="$PROXY_PORT" \
-  python3 proxy_server.py &
+  python3 proxy_server.py >/dev/null 2>"$PROXY_LOG" &
 PROXY_PID=$!
-trap 'kill "$PROXY_PID" 2>/dev/null || true; rm -f "$TOKENS_FILE"' EXIT
+trap 'kill "$PROXY_PID" 2>/dev/null || true; rm -f "$TOKENS_FILE" "$PROXY_LOG"' EXIT
 for _ in 1 2 3 4 5 10 20; do
   if python3 -c "import socket,sys; s=socket.socket(); sys.exit(0 if s.connect_ex(('127.0.0.1',$PROXY_PORT))==0 else 1)" 2>/dev/null; then
     break
   fi
   sleep 0.2
 done
+cat "$PROXY_LOG" >&2
 
 line
 echo "STEP 1  Normal operation. The app calls with token v1."
