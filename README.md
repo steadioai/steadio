@@ -1,47 +1,48 @@
-# SteadIO: Never get a surprise AI bill again
+# SteadIO: Reliability for AI agents in production
 
 [![CI](https://github.com/steadioai/steadio/actions/workflows/ci.yml/badge.svg)](https://github.com/steadioai/steadio/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/steadioai/steadio)](https://github.com/steadioai/steadio/releases)
 
-**Never get a surprise AI bill again.** Drop-in LLM proxy with per-agent cost attribution and hard budget enforcement.
+**Reliability for AI agents in production.** SteadIO is a self-hosted LLM proxy and control plane. One base URL change puts every model call under your control: runaway detection, circuit breaking, and hard budget enforcement, with per-agent cost attribution so you can see exactly what happened.
 
-> "Our costs have more than tripled since November of '25." - Chamath Palihapitiya on his AI startup's spend. Runaway agents can rack up $50,000 overnight. SteadIO stops them at the source.
+> A single runaway agent can loop for hours and rack up $50,000 overnight before anyone notices. SteadIO catches it at the source: it detects the runaway, opens a circuit breaker, and stops the agent before the damage compounds.
 
 ## What it does
 
-Point your agents at `http://localhost:3001/openai` instead of OpenAI directly. SteadIO:
+Point your agents at `http://localhost:3001/openai` instead of OpenAI directly. SteadIO sits on the hot path and keeps agents inside their guardrails:
 
-1. **Tags every request** with agent ID and team ID
-2. **Counts tokens and costs** in real time using provider-accurate pricing
-3. **Enforces budget caps**: returns HTTP 402 and kills the agent the moment it exceeds its limit
-4. **Stores attribution data** in PostgreSQL so you can pinpoint exactly which agent caused a cost spike
+1. **Detects runaway agents** by token velocity (spikes above the rolling average) and by repeated identical prompts (loop detection)
+2. **Opens a circuit breaker** the moment an agent runs away, returning HTTP 429 until a cooldown expires, before any budget cap is even set
+3. **Enforces hard budget caps**: returns HTTP 402 and stops the agent the moment it exceeds its limit
+4. **Attributes every request** to an agent and team, counting tokens and costs in real time with provider-accurate pricing, stored in PostgreSQL
 
 Works with OpenAI and Anthropic. Streaming supported. One environment variable to instrument.
 
 ## Screenshots
 
-**Live cost overview** - sample workspace with spend trends, model mix, workflow attribution, and agent-level breakdowns:
+**Live reliability and cost overview** (sample workspace with spend trends, model mix, workflow attribution, and agent-level breakdowns):
 
-![SteadIO live cost overview showing spend trends, model mix, workflow attribution, and agent costs](./docs/screenshots/demo-dashboard.png)
+![SteadIO live overview showing spend trends, model mix, workflow attribution, and agent costs](./docs/screenshots/demo-dashboard.png)
 
-**Design partner onboarding** - the quickstart flow for connecting agents to the SteadIO proxy:
+**Design partner onboarding** (the quickstart flow for connecting agents to the SteadIO proxy):
 
 ![SteadIO onboarding quickstart showing proxy endpoint, API key handling, and SDK configuration](./docs/screenshots/onboarding-quickstart.png)
 
 ## Architecture
 
 ```
-Your Agent ──→ SteadIO Proxy ──→ LLM Provider (OpenAI / Anthropic)
-                    │
-                    ↓ (async, fire-and-forget)
-              Cost Engine (PostgreSQL + Redis)
-                    │
-                    ↓
+Your Agent ──> SteadIO Proxy ──> LLM Provider (OpenAI / Anthropic)
+                    |
+                    | (async, fire-and-forget)
+                    v
+              Control Engine (PostgreSQL + Redis)
+                    |
+                    v
               Dashboard (React)
 ```
 
-The proxy sits on the hot path: auth, tagging, and budget check run synchronously against Redis (<1ms overhead). Cost attribution is fire-and-forget to keep p99 latency clean.
+The proxy sits on the hot path: auth, tagging, runaway check, and budget check run synchronously against Redis (<1ms overhead). Cost attribution is fire-and-forget to keep p99 latency clean.
 
 ## Quick Start
 
@@ -53,7 +54,7 @@ cd steadio
 make demo
 ```
 
-Starts all services, seeds historical cost data across 2 teams and 6 agents, and launches a synthetic traffic generator that keeps posting new events every 5 seconds. Open `http://localhost:5173` to see live cost attribution immediately.
+Starts all services, seeds historical data across 2 teams and 6 agents, and launches a synthetic traffic generator that keeps posting new events every 5 seconds. Open `http://localhost:5173` to see live attribution and controls immediately.
 
 When done: `make clean`
 
@@ -69,7 +70,7 @@ cd steadio
 docker compose up -d
 ```
 
-Starts proxy (3001), cost engine (3002), dashboard (5173), PostgreSQL, and Redis.
+Starts proxy (3001), control engine (3002), dashboard (5173), PostgreSQL, and Redis.
 
 **2. Create an API key**
 
@@ -79,7 +80,7 @@ curl -s -X POST http://localhost:3002/api/keys \
   -d '{"teamId": "myteam", "name": "dev key"}'
 ```
 
-Save the `key` value — it is only shown once.
+Save the `key` value. It is only shown once.
 
 **3. Point your agent at the proxy**
 
@@ -100,7 +101,7 @@ Add these headers to every request (or set them in your SDK client config):
 | Header | Value | Purpose |
 |---|---|---|
 | `X-SteadIO-Key` | `el_myteam_<suffix>` | Authenticates to SteadIO |
-| `X-Agent-Id` | `my-agent` | Tags the request for cost attribution |
+| `X-Agent-Id` | `my-agent` | Tags the request for attribution and per-agent controls |
 
 Your existing provider `Authorization` / `x-api-key` headers pass through to the upstream unchanged. No other code changes.
 
@@ -134,7 +135,7 @@ The agent stops. You don't get the bill.
 
 **5. Open the dashboard**
 
-`http://localhost:5173` — real-time cost breakdown by agent and team.
+`http://localhost:5173` for a real-time breakdown of reliability events and cost by agent and team.
 
 ![SteadIO dashboard showing spend trends, model mix, workflow attribution, and agent costs](docs/screenshots/demo-dashboard.png)
 
@@ -147,39 +148,17 @@ Working integration examples for the most popular AI frameworks are in [`example
 | [`examples/openai-python/`](./examples/openai-python/) | OpenAI Python SDK | `base_url` + two headers |
 | [`examples/langchain/`](./examples/langchain/) | LangChain | `openai_api_base` + `default_headers` on `ChatOpenAI` |
 | [`examples/llamaindex/`](./examples/llamaindex/) | LlamaIndex | Custom `openai.OpenAI` client passed to LlamaIndex |
-| [`examples/multi-agent/`](./examples/multi-agent/) | Any framework | Per-agent `X-Agent-Id` for cost attribution by agent |
+| [`examples/multi-agent/`](./examples/multi-agent/) | Any framework | Per-agent `X-Agent-Id` for attribution by agent |
 
 All examples work against the demo instance (`make demo`) and require a real OpenAI API key for upstream calls.
 
-## Packages
+## Reliability Controls
 
-| Package | Port | Purpose |
-|---|---|---|
-| `@steadio/proxy` | 3001 | Drop-in LLM proxy: tagging, budget check, streaming |
-| `@steadio/cost-engine` | 3002 | Cost attribution, budget enforcement, runaway detection |
-| `@steadio/dashboard` | 5173 | React dashboard for cost/budget visibility |
-| `@steadio/shared` | - | Shared types and pricing tables |
+SteadIO's job is to keep production agents inside their guardrails. Three controls run on the hot path:
 
-## Supported Providers
+**Runaway detection.** The engine watches token velocity (a spike above the rolling average) and repeated identical prompts (loop detection). Either signal marks an agent as running away.
 
-| Provider | Models |
-|---|---|
-| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo |
-| Anthropic | claude-opus-4-8, claude-sonnet-4-6, claude-haiku-4-5, claude-3-5-sonnet, claude-3-5-haiku |
-| Google (roadmap) | gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash |
-
-Prefix matching handles versioned model names — `claude-3-5-sonnet-20241022` resolves to `claude-3-5-sonnet` pricing automatically. No code changes needed when providers release new versions.
-
-## Budget Enforcement Modes
-
-| Mode | Behavior |
-|---|---|
-| `kill` | Returns HTTP 402 immediately when cap is hit |
-| `warn` | Allows request, fires alert at `warningThresholdPercent` |
-
-Budget scopes: `agent`, `team`. Periods: `daily`, `weekly`, `monthly`.
-
-SteadIO also detects runaway agents (velocity spike or repeated identical prompts) and opens a circuit breaker before a budget cap is set. The response is HTTP 429:
+**Circuit breaking.** When an agent runs away, SteadIO opens a circuit breaker and returns HTTP 429 until a cooldown expires. This fires before any budget cap is set, so a loop is stopped even without a configured limit:
 
 ```json
 {
@@ -190,13 +169,42 @@ SteadIO also detects runaway agents (velocity spike or repeated identical prompt
 }
 ```
 
-The agent is blocked until the cooldown expires. You can inspect and reset circuit state from the dashboard.
+You can inspect and reset circuit state from the dashboard.
+
+**Budget enforcement.** Hard caps by scope and period. When a cap is hit, `kill` mode returns HTTP 402 and stops the agent; `warn` mode allows the request and fires an alert at `warningThresholdPercent`.
+
+| Setting | Options |
+|---|---|
+| Budget scopes | `agent`, `team` |
+| Budget periods | `daily`, `weekly`, `monthly` |
+| Enforcement modes | `kill` (HTTP 402), `warn` (alert) |
+
+## Cost Attribution
+
+Every request is tagged with agent ID and team ID, priced with provider-accurate tables, and stored in PostgreSQL so you can pinpoint exactly which agent drove a spike. Prefix matching handles versioned model names automatically, so `claude-3-5-sonnet-20241022` resolves to `claude-3-5-sonnet` pricing with no code changes when providers ship new versions.
+
+## Supported Providers
+
+| Provider | Models |
+|---|---|
+| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo |
+| Anthropic | claude-opus-4-8, claude-sonnet-4-6, claude-haiku-4-5, claude-3-5-sonnet, claude-3-5-haiku |
+| Google (roadmap) | gemini-1.5-pro, gemini-1.5-flash, gemini-2.0-flash |
+
+## Packages
+
+| Package | Port | Purpose |
+|---|---|---|
+| `@steadio/proxy` | 3001 | Drop-in LLM proxy: tagging, runaway check, budget check, streaming |
+| `@steadio/cost-engine` | 3002 | Attribution, budget enforcement, runaway detection, circuit breaking |
+| `@steadio/dashboard` | 5173 | React dashboard for reliability and cost visibility |
+| `@steadio/shared` | - | Shared types and pricing tables |
 
 ## Why a proxy instead of SDK instrumentation?
 
-**SDK wrappers drift.** Every provider library update can break your cost tracking. A proxy is provider-agnostic and survives model version bumps without code changes.
+**The proxy stops requests before they reach the provider.** SDK-level hooks fire after the network call returns, which is too late if an agent is already in a runaway loop burning tokens. A proxy can break the circuit on the way out.
 
-**The proxy stops requests before they reach the provider.** SDK-level hooks fire after the network call returns, which is too late if an agent is already in a runaway loop burning tokens.
+**SDK wrappers drift.** Every provider library update can break your instrumentation. A proxy is provider-agnostic and survives model version bumps without code changes.
 
 **Language-agnostic.** One environment variable. Works with Python, TypeScript, Go, or anything that makes HTTP calls.
 
@@ -204,16 +212,22 @@ The agent is blocked until the cooldown expires. You can inspect and reset circu
 
 |  | SteadIO | Langfuse | Native provider billing |
 |---|---|---|---|
-| Per-agent cost attribution | Yes | Yes (with SDK) | No |
-| Hard budget enforcement | Yes (HTTP 402) | No | No |
 | Runaway detection + circuit break | Yes | No | No |
+| Hard budget enforcement | Yes (HTTP 402) | No | No |
+| Per-agent cost attribution | Yes | Yes (with SDK) | No |
 | Language-agnostic (env var only) | Yes | No (SDK per language) | N/A |
 | Self-hosted | Yes | Yes | No |
 | Streaming support | Yes | Yes | N/A |
 | Real-time dashboard | Yes | Yes | Limited |
 | Setup | `docker compose up` | Deploy + instrument | Sign up |
 
-Langfuse is excellent for tracing and observability. SteadIO is the layer that **stops runaway agents before they generate a surprise bill**.
+Langfuse is excellent for tracing and observability. SteadIO is the layer that keeps agents reliable in production: it stops a runaway before it compounds, and attributes every request so you know what happened.
+
+## Roadmap
+
+- **Retries and provider fallback** on upstream errors and timeouts
+- **Per-team credential isolation** in the proxy (see the [key-isolation demo](https://github.com/steadioai/llm-gateway-key-isolation-demo))
+- **Google / Gemini** provider support
 
 ## Development
 
