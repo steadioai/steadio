@@ -23,6 +23,8 @@ import { incidentsRoutes } from "./routes/incidents.js";
 import { approvalsRoutes } from "./routes/approvals.js";
 import { evidenceRoutes } from "./routes/evidence.js";
 import { gatewayRoutes } from "./routes/gateway.js";
+import { proxyEventsRoutes } from "./routes/proxy-events.js";
+import { circuitBreakerRoutes } from "./routes/circuit-breakers.js";
 import { getDb } from "./db.js";
 import { getRedis } from "./redis.js";
 import { jsonLogger } from "./middleware/logger.js";
@@ -89,6 +91,9 @@ app.get("/healthz", async (c) => {
 // LLM gateway (/v1) — self-guarded (X-SteadIO-Key), mounted before /api/* auth.
 app.route("/v1", gatewayRoutes);
 
+// Internal proxy event ingest — service-to-service, no auth (mounted before /api/* JWT).
+app.route("/internal/proxy-events", proxyEventsRoutes);
+
 // Public routes (no auth)
 app.route("/api/auth", authRoutes);
 app.route("/api/demo", demoApiRoutes);
@@ -115,6 +120,7 @@ app.route("/api/tool-ledger", toolLedgerRoutes);
 app.route("/api/incidents", incidentsRoutes);
 app.route("/api/approvals", approvalsRoutes);
 app.route("/api/evidence", evidenceRoutes);
+app.route("/api/circuit-breakers", circuitBreakerRoutes);
 app.route("/api/demo/env", demoRoutes);
 
 app.onError((err, c) => {
