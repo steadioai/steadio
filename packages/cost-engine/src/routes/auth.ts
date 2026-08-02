@@ -180,7 +180,7 @@ authRoutes.post("/invite", managementAuthMiddleware, async (c) => {
   if (auth instanceof Response) return auth;
 
   // Create a placeholder user with a temp password (must be reset on first login)
-  const tempPassword = Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  const tempPassword = randomBytes(24).toString("base64url");
   const passwordHash = await bcrypt.hash(tempPassword, 12);
 
   const db = getDb();

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import { createHash } from "node:crypto";
 import {
   parseAnthropicUsage,
@@ -35,7 +35,7 @@ export function createAnthropicRouter(deps: ProxyDeps) {
   const app = new Hono<ProxyEnv>();
 
   app.all("/*", async (c) => {
-    const requestId = uuidv4();
+    const requestId = randomUUID();
     const startMs = Date.now();
 
     const agentId: string = c.get("agentId") ?? "untagged";

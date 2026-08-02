@@ -17,7 +17,7 @@ import malicious_dep  # noqa: F401
 def call_model(prompt: str) -> str:
     api_key = os.environ["PROVIDER_API_KEY"]  # the app itself holds the key
     # Stubbed upstream call. The point is only that the key is in this process.
-    return f"model says: hello (using key {api_key[:8]}...)"
+    return f"model says: hello (using key {'*' * 8}...)"
 
 
 if __name__ == "__main__":
