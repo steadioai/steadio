@@ -1,5 +1,5 @@
 import type { TokenUsage, ToolCall } from "@steadio/shared";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 
 // Parse token usage from Anthropic non-streaming response
 export function parseAnthropicUsage(responseBody: unknown): TokenUsage | null {
@@ -29,7 +29,7 @@ export function parseAnthropicToolCalls(responseBody: unknown): ToolCall[] {
     const b = block as Record<string, unknown>;
     if (b["type"] !== "tool_use") continue;
     toolCalls.push({
-      id: (b["id"] as string) ?? uuidv4(),
+      id: (b["id"] as string) ?? randomUUID(),
       name: (b["name"] as string) ?? "unknown",
       arguments: b["input"],
     });

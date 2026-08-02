@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import type { TokenUsage, ToolCall } from "@steadio/shared";
 
 const OPENAI_BASE = "https://api.openai.com";
@@ -71,7 +71,7 @@ export function parseOpenAiToolCalls(responseBody: unknown): ToolCall[] {
       if (typeof fn !== "object" || fn === null) continue;
       const f = fn as Record<string, unknown>;
       toolCalls.push({
-        id: (tc["id"] as string) ?? uuidv4(),
+        id: (tc["id"] as string) ?? randomUUID(),
         name: (f["name"] as string) ?? "unknown",
         arguments: typeof f["arguments"] === "string"
           ? (() => { try { return JSON.parse(f["arguments"] as string); } catch { return f["arguments"]; } })()
