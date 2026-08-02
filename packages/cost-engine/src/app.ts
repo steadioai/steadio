@@ -25,6 +25,7 @@ import { evidenceRoutes } from "./routes/evidence.js";
 import { gatewayRoutes } from "./routes/gateway.js";
 import { proxyEventsRoutes } from "./routes/proxy-events.js";
 import { circuitBreakerRoutes } from "./routes/circuit-breakers.js";
+import { keyResolveRoutes } from "./routes/key-resolve.js";
 import { getDb } from "./db.js";
 import { getRedis } from "./redis.js";
 import { jsonLogger } from "./middleware/logger.js";
@@ -93,6 +94,9 @@ app.route("/v1", gatewayRoutes);
 
 // Internal proxy event ingest — service-to-service, no auth (mounted before /api/* JWT).
 app.route("/internal/proxy-events", proxyEventsRoutes);
+
+// Proxy key resolution — service-to-service, no JWT (mounted before /api/* auth).
+app.route("/api/keys", keyResolveRoutes);
 
 // Public routes (no auth)
 app.route("/api/auth", authRoutes);
