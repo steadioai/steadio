@@ -129,7 +129,7 @@ CREATE INDEX IF NOT EXISTS budgets_agent_id_idx ON budgets(agent_id);
 
 -- Cost Events (TimescaleDB hypertable)
 CREATE TABLE IF NOT EXISTS cost_events (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
   agent_id TEXT NOT NULL,
   team_id TEXT NOT NULL,
   request_id TEXT,
@@ -141,7 +141,8 @@ CREATE TABLE IF NOT EXISTS cost_events (
   cost_cents INTEGER NOT NULL DEFAULT 0,
   duration_ms BIGINT,
   metadata JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (id, created_at)
 );
 CREATE INDEX IF NOT EXISTS cost_events_agent_id_created_at_idx ON cost_events(agent_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS cost_events_team_id_created_at_idx ON cost_events(team_id, created_at DESC);
@@ -156,7 +157,7 @@ END $$;
 
 -- Tool Call Logs
 CREATE TABLE IF NOT EXISTS tool_call_logs (
-  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+  id TEXT NOT NULL DEFAULT gen_random_uuid()::text,
   agent_id TEXT NOT NULL,
   team_id TEXT NOT NULL,
   request_id TEXT NOT NULL,
@@ -169,12 +170,20 @@ CREATE TABLE IF NOT EXISTS tool_call_logs (
   latency_ms BIGINT,
   cost_cents INTEGER NOT NULL DEFAULT 0,
   metadata JSONB NOT NULL DEFAULT '{}',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (id, created_at)
 );
 CREATE INDEX IF NOT EXISTS tool_call_logs_agent_id_idx ON tool_call_logs(agent_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS tool_call_logs_team_id_idx ON tool_call_logs(team_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS tool_call_logs_request_id_idx ON tool_call_logs(request_id);
 CREATE INDEX IF NOT EXISTS tool_call_logs_tool_name_idx ON tool_call_logs(tool_name);
+
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'timescaledb') THEN
+    PERFORM create_hypertable('tool_call_logs', 'created_at', if_not_exists => TRUE);
+  END IF;
+END $$;
 
 -- Runaway Events
 CREATE TABLE IF NOT EXISTS runaway_events (
