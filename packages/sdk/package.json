@@ -1,0 +1,44 @@
+{
+  "name": "@steadio/sdk",
+  "version": "0.1.0",
+  "description": "Drop-in SDK for SteadIO runtime guardrails — route your agent's LLM + tool calls through api.steadio.ai and branch on allow / block / hold / throttle in ~3 lines.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "steadio",
+    "guardrails",
+    "llm",
+    "agents",
+    "ai-safety",
+    "reliability"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -p tsconfig.json --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist *.tsbuildinfo"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.21",
+    "typescript": "*",
+    "vitest": "^3.2.6"
+  }
+}

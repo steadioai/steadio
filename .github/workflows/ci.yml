@@ -46,6 +46,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @steadio/shared build
       - run: pnpm --filter @steadio/proxy test
+      - run: pnpm --filter @steadio/cost-engine test
 
   build:
     name: Build
