@@ -1,104 +1,146 @@
-import { Hono } from "hono";
-import { randomBytes, createHash } from "node:crypto";
-import { v4 as uuidv4 } from "uuid";
-import { eq, isNull, and } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import { apiKeys, teams } from "../db/schema.js";
+import { Hono, type Context } from "hono";
+import { eq } from "drizzle-orm";
+import { createHash, randomBytes } from "node:crypto";
+import { getJwtSecret } from "../config/jwt.js";
+import jwt from "jsonwebtoken";
+import { getDb } from "../db.js";
+import { apiKeys } from "@steadio/shared/schema";
 
-export function createApiKeysRouter(db: Db) {
-  const app = new Hono();
+export const apiKeyRoutes = new Hono();
 
-  // Resolve a hashed key to its team, called by the proxy on cache miss.
-  // Returns 404 for unknown or revoked keys so the proxy can return 401.
-  app.post("/api/keys/resolve", async (c) => {
-    const body = await c.req.json<{ keyHash?: string }>();
-    if (!body.keyHash) {
-      return c.json({ error: "missing_key_hash" }, 400);
-    }
+const JWT_SECRET = getJwtSecret();
 
-    const [key] = await db
-      .select()
-      .from(apiKeys)
-      .where(and(eq(apiKeys.keyHash, body.keyHash), isNull(apiKeys.revokedAt)))
-      .limit(1);
+type AuthClaims = {
+  sub?: string;
+  teamId?: string;
+  role?: string;
+};
 
-    if (!key) {
-      return c.json({ error: "invalid_or_revoked_key" }, 404);
-    }
+const getBearerToken = (authorization: string | undefined): string | null => {
+  const [scheme, token] = authorization?.split(" ") ?? [];
+  if (scheme !== "Bearer" || !token) return null;
+  return token;
+};
 
-    return c.json({ teamId: key.teamId, keyId: key.id });
-  });
+const getAuthClaims = (c: Context): AuthClaims | Response => {
+  const token = getBearerToken(c.req.header("Authorization"));
+  if (!token) return c.json({ error: "unauthorized" }, 401);
 
-  // GET /api/keys?teamId= — list keys (no plaintext)
-  app.get("/api/keys", async (c) => {
-    const teamId = c.req.query("teamId");
-    const conditions = [isNull(apiKeys.revokedAt)];
-    if (teamId) conditions.push(eq(apiKeys.teamId, teamId));
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (typeof decoded === "string") return c.json({ error: "unauthorized" }, 401);
+    return decoded as AuthClaims;
+  } catch {
+    return c.json({ error: "unauthorized" }, 401);
+  }
+};
 
-    const rows = await db
-      .select({
-        id: apiKeys.id,
-        teamId: apiKeys.teamId,
-        name: apiKeys.name,
-        createdAt: apiKeys.createdAt,
-        revokedAt: apiKeys.revokedAt,
-      })
-      .from(apiKeys)
-      .where(and(...conditions));
+// "operator" is an elevated Steadio-staff role and a superset of "admin", so it
+// must satisfy the same team-admin gates (see management-auth.ts).
+const TEAM_ADMIN_ROLES = new Set(["admin", "operator"]);
 
-    return c.json({ keys: rows });
-  });
+const requireTeamAdmin = (c: Context, teamId: string): AuthClaims | Response => {
+  const claims = getAuthClaims(c);
+  if (claims instanceof Response) return claims;
+  if (!claims.role || !TEAM_ADMIN_ROLES.has(claims.role) || claims.teamId !== teamId) {
+    return c.json({ error: "forbidden" }, 403);
+  }
+  return claims;
+};
 
-  // POST /api/keys — create a key; auto-creates team if needed
-  app.post("/api/keys", async (c) => {
-    const body = await c.req.json<{ teamId?: string; name?: string }>();
-    const teamId = body.teamId?.trim();
-    const name = body.name?.trim() ?? "Default key";
+// POST /api/api-keys/:id/rotate
+// Generates a new key value for the given API key record.
+// The caller must present the new key immediately — it is never stored in plain text.
+// Rotated keys take effect immediately; the old value stops working once the proxy's
+// 60s auth cache expires.
+apiKeyRoutes.post("/:id/rotate", async (c) => {
+  const id = c.req.param("id");
+  const db = getDb();
 
-    if (!teamId) {
-      return c.json({ error: "teamId is required" }, 400);
-    }
+  const existing = await db
+    .select({ id: apiKeys.id, teamId: apiKeys.teamId, name: apiKeys.name, revokedAt: apiKeys.revokedAt })
+    .from(apiKeys)
+    .where(eq(apiKeys.id, id))
+    .limit(1);
 
-    // Upsert team
-    const existingTeam = await db
-      .select()
-      .from(teams)
-      .where(eq(teams.id, teamId))
-      .limit(1);
+  const key = existing[0];
+  if (!key) return c.json({ error: "not_found" }, 404);
 
-    if (existingTeam.length === 0) {
-      await db.insert(teams).values({ id: teamId, name: teamId });
-    }
+  const auth = requireTeamAdmin(c, key.teamId);
+  if (auth instanceof Response) return auth;
 
-    // Generate key: el_<teamId>_<32 random hex chars>
-    const suffix = randomBytes(16).toString("hex");
-    const plaintext = `el_${teamId}_${suffix}`;
-    const keyHash = createHash("sha256").update(plaintext).digest("hex");
-    const id = uuidv4();
+  if (key.revokedAt) {
+    return c.json({ error: "key_revoked", message: "Revoked keys cannot be rotated" }, 409);
+  }
 
-    await db.insert(apiKeys).values({ id, keyHash, teamId, name });
+  const rawKey = `st_${randomBytes(32).toString("hex")}`;
+  const keyHash = createHash("sha256").update(rawKey).digest("hex");
+  const keyPrefix = rawKey.slice(0, 12);
 
-    return c.json(
-      {
-        key: plaintext,
-        id,
-        teamId,
-        name,
-        createdAt: new Date().toISOString(),
-      },
-      201
-    );
-  });
+  const updated = await db
+    .update(apiKeys)
+    .set({ keyHash, keyPrefix })
+    .where(eq(apiKeys.id, id))
+    .returning({
+      id: apiKeys.id,
+      teamId: apiKeys.teamId,
+      keyPrefix: apiKeys.keyPrefix,
+      name: apiKeys.name,
+      createdAt: apiKeys.createdAt,
+    });
 
-  // DELETE /api/keys/:id — soft-revoke
-  app.delete("/api/keys/:id", async (c) => {
-    const id = c.req.param("id");
-    await db
-      .update(apiKeys)
-      .set({ revokedAt: new Date() })
-      .where(eq(apiKeys.id, id));
-    return c.json({ ok: true });
-  });
+  if (!updated[0]) return c.json({ error: "not_found" }, 404);
 
-  return app;
-}
+  return c.json({ apiKey: { ...updated[0], key: rawKey } });
+});
+
+// GET /api/api-keys/:id
+apiKeyRoutes.get("/:id", async (c) => {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: apiKeys.id,
+      teamId: apiKeys.teamId,
+      keyPrefix: apiKeys.keyPrefix,
+      name: apiKeys.name,
+      revokedAt: apiKeys.revokedAt,
+      lastUsedAt: apiKeys.lastUsedAt,
+      createdAt: apiKeys.createdAt,
+    })
+    .from(apiKeys)
+    .where(eq(apiKeys.id, c.req.param("id")))
+    .limit(1);
+
+  const key = rows[0];
+  if (!key) return c.json({ error: "not_found" }, 404);
+
+  const auth = requireTeamAdmin(c, key.teamId);
+  if (auth instanceof Response) return auth;
+
+  return c.json({ apiKey: key });
+});
+
+// DELETE /api/api-keys/:id — revoke
+apiKeyRoutes.delete("/:id", async (c) => {
+  const db = getDb();
+  const existing = await db
+    .select({ teamId: apiKeys.teamId })
+    .from(apiKeys)
+    .where(eq(apiKeys.id, c.req.param("id")))
+    .limit(1);
+
+  const key = existing[0];
+  if (!key) return c.json({ error: "not_found" }, 404);
+
+  const auth = requireTeamAdmin(c, key.teamId);
+  if (auth instanceof Response) return auth;
+
+  const rows = await db
+    .update(apiKeys)
+    .set({ revokedAt: new Date() })
+    .where(eq(apiKeys.id, c.req.param("id")))
+    .returning({ id: apiKeys.id });
+
+  if (!rows[0]) return c.json({ error: "not_found" }, 404);
+  return c.json({ success: true });
+});

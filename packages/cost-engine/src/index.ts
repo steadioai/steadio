@@ -1,3 +1,3 @@
-export { createApp } from "./app.js";
-export { getDb } from "./db/client.js";
-export * from "./db/schema.js";
+export { app } from "./app.js";
+export { getDb } from "./db.js";
+export { getRedis } from "./redis.js";

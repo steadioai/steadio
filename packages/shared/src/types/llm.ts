@@ -53,6 +53,14 @@ export interface ProxyRequestContext {
   startedAt: Date;
 }
 
+export interface RequestContext {
+  teamId: string;
+  agentId: string;
+  workflowId: string | null;
+  requestId: string;
+  provider: "openai" | "anthropic" | "google";
+}
+
 export interface ProxyResponseMeta {
   provider: LlmProvider;
   model: LlmModel;

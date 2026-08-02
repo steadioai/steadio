@@ -60,6 +60,8 @@ services:
       PORT: "3002"
       DATABASE_URL: postgresql://steadio:steadio_dev@db:5432/steadio
       REDIS_URL: redis://redis:6379
+      JWT_SECRET: change-in-production
+      DASHBOARD_URL: http://localhost:5173
     depends_on:
       db:
         condition: service_healthy

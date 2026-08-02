@@ -1,156 +1,214 @@
 import { Hono } from "hono";
-import { v4 as uuidv4 } from "uuid";
-import type { Db } from "../db/client.js";
-import type { Redis } from "ioredis";
-import { costEvents, toolCallLogs } from "../db/schema.js";
-import { computeCost } from "../services/cost-calculator.js";
-import { checkAndEnforceBudget } from "../services/budget-enforcer.js";
-import {
-  trackVelocityAndDetectRunaway,
-  trackLoopSignature,
-  circuitBreakAgent,
-  getCircuitBreakerState,
-} from "../services/runaway-detector.js";
-import { fireRunawayAlert } from "../services/alert-service.js";
-import type { ProxyEvent } from "../types.js";
-import { SSE_CHANNEL } from "./sse.js";
+import { eq, and, gte, sql } from "drizzle-orm";
+import { getDb } from "../db.js";
+import { getRedis } from "../redis.js";
+import { costEvents, toolCallLogs, runawayEvents, budgets } from "@steadio/shared/schema";
+import { calculateCostCents } from "../pricing.js";
+import { RunawayDetector } from "../gateway/runaway-detector.js";
 
-export function createProxyEventsRouter(db: Db, redis: Redis) {
-  const app = new Hono();
+export const proxyEventsRoutes = new Hono();
 
-  // Called by the proxy after each successful LLM call
-  app.post("/internal/proxy-events", async (c) => {
-    let event: ProxyEvent;
-    try {
-      event = await c.req.json() as ProxyEvent;
-    } catch {
-      return c.json({ error: "invalid_json" }, 400);
-    }
+interface ProxyEvent {
+  requestId: string;
+  provider: string;
+  model: string;
+  agentId: string;
+  teamId: string;
+  keyId?: string;
+  workflowId?: string | null;
+  usage: { inputTokens: number; outputTokens: number };
+  toolCalls?: Array<{ name: string; arguments?: unknown }>;
+  latencyMs: number;
+  streaming: boolean;
+  statusCode: number;
+  promptHash?: string;
+}
 
-    const cost = computeCost(
-      event.provider,
+function secondsUntilMidnightUTC(): number {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setUTCDate(midnight.getUTCDate() + 1);
+  midnight.setUTCHours(0, 0, 0, 0);
+  return Math.max(1, Math.floor((midnight.getTime() - now.getTime()) / 1000));
+}
+
+proxyEventsRoutes.post("/", async (c) => {
+  let event: ProxyEvent;
+  try {
+    event = await c.req.json<ProxyEvent>();
+  } catch {
+    return c.json({ error: "invalid_json" }, 400);
+  }
+
+  try {
+    const db = getDb();
+
+    // Calculate cost
+    const costCents = calculateCostCents(
       event.model,
       event.usage.inputTokens,
       event.usage.outputTokens,
-      event.usage.cacheReadTokens ?? 0,
-      event.usage.cacheWriteTokens ?? 0
     );
 
-    // Persist cost event
+    // Insert cost event
     await db.insert(costEvents).values({
-      id: uuidv4(),
       agentId: event.agentId,
       teamId: event.teamId,
-      apiKeyId: event.keyId !== "unknown" ? event.keyId : null,
-      workflowId: event.workflowId,
+      requestId: event.requestId,
+      workflowId: event.workflowId ?? null,
       provider: event.provider,
       model: event.model,
       inputTokens: event.usage.inputTokens,
       outputTokens: event.usage.outputTokens,
-      cacheReadTokens: event.usage.cacheReadTokens ?? 0,
-      cacheWriteTokens: event.usage.cacheWriteTokens ?? 0,
-      inputCostUsd: cost.inputCostUsd.toFixed(8),
-      outputCostUsd: cost.outputCostUsd.toFixed(8),
-      cacheReadCostUsd: cost.cacheReadCostUsd.toFixed(8),
-      cacheWriteCostUsd: cost.cacheWriteCostUsd.toFixed(8),
-      totalCostUsd: cost.totalCostUsd.toFixed(8),
-      requestId: event.requestId,
-      latencyMs: event.latencyMs,
-      toolCallCount: event.toolCalls.length,
-      streaming: event.streaming,
-      statusCode: event.statusCode,
+      costCents,
+      durationMs: event.latencyMs,
+      metadata: {},
     });
 
-    // Persist tool call logs
-    if (event.toolCalls.length > 0) {
+    // Insert tool call logs if present
+    if (event.toolCalls && event.toolCalls.length > 0) {
       await db.insert(toolCallLogs).values(
         event.toolCalls.map((tc) => ({
-          id: uuidv4(),
           agentId: event.agentId,
           teamId: event.teamId,
           requestId: event.requestId,
           toolName: tc.name,
-          parameters: JSON.stringify(tc.arguments).slice(0, 1024),
-          resultStatus: "success" as const,
-          latencyMs: null,
-        }))
+          parameters: JSON.stringify(tc.arguments ?? {}).slice(0, 1024),
+          resultStatus: "success",
+        })),
       );
     }
 
-    // Budget enforcement (async, non-blocking for response)
-    checkAndEnforceBudget(db, redis, event.agentId, event.teamId, cost.totalCostUsd).catch(
-      (err: unknown) => console.error("[budget] enforcement error:", err)
-    );
+    // Budget enforcement — fire-and-forget
+    void checkBudget(event, costCents).catch((err) => {
+      console.error("[proxy-events] budget check failed:", err);
+    });
 
-    // Runaway detection: velocity + loop signature (async, non-blocking)
-    detectRunaway(db, redis, event, cost.totalCostUsd).catch(
-      (err: unknown) => console.error("[runaway] detection error:", err)
-    );
-
-    // Publish to SSE channel for real-time dashboard updates
-    redis.publish(SSE_CHANNEL, JSON.stringify({
-      agentId: event.agentId,
-      teamId: event.teamId,
-      model: event.model,
-      totalCostUsd: cost.totalCostUsd,
-      inputTokens: event.usage.inputTokens,
-      outputTokens: event.usage.outputTokens,
-      requestId: event.requestId,
-      recordedAt: new Date().toISOString(),
-    })).catch(() => {});
+    // Runaway detection — fire-and-forget
+    const totalTokens = event.usage.inputTokens + event.usage.outputTokens;
+    void checkRunaway(event, totalTokens).catch((err) => {
+      console.error("[proxy-events] runaway check failed:", err);
+    });
 
     return c.json({ ok: true }, 202);
-  });
+  } catch (err) {
+    console.error("[proxy-events] ingest error:", err);
+    return c.json({ error: "internal_error" }, 500);
+  }
+});
 
-  return app;
+async function checkBudget(event: ProxyEvent, _costCents: number): Promise<void> {
+  const db = getDb();
+  const redis = getRedis();
+
+  // Find kill-mode budgets for this team
+  const teamBudgets = await db
+    .select()
+    .from(budgets)
+    .where(
+      and(
+        eq(budgets.teamId, event.teamId),
+        eq(budgets.enforcementMode, "kill"),
+      ),
+    );
+
+  if (teamBudgets.length === 0) return;
+
+  for (const budget of teamBudgets) {
+    // Determine period start
+    const now = new Date();
+    let periodStart: Date;
+    switch (budget.periodType) {
+      case "daily": {
+        const d = new Date(now);
+        d.setUTCHours(0, 0, 0, 0);
+        periodStart = d;
+        break;
+      }
+      case "weekly": {
+        const d = new Date(now);
+        d.setUTCHours(0, 0, 0, 0);
+        const day = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() - day + 1);
+        periodStart = d;
+        break;
+      }
+      case "monthly": {
+        const d = new Date(now);
+        d.setUTCDate(1);
+        d.setUTCHours(0, 0, 0, 0);
+        periodStart = d;
+        break;
+      }
+      default: {
+        const d = new Date(now);
+        d.setUTCDate(d.getUTCDate() - 30);
+        periodStart = d;
+      }
+    }
+
+    // Sum current spend in period
+    const conditions = [
+      eq(costEvents.teamId, event.teamId),
+      gte(costEvents.createdAt, periodStart),
+    ];
+    if (budget.agentId) {
+      conditions.push(eq(costEvents.agentId, budget.agentId));
+    }
+
+    const spendRows = await db
+      .select({ total: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::int` })
+      .from(costEvents)
+      .where(and(...conditions));
+
+    const currentSpend = spendRows[0]?.total ?? 0;
+
+    if (currentSpend >= budget.limitCents) {
+      const ttl = secondsUntilMidnightUTC();
+      const now = new Date();
+      const resetAt = new Date(now.getTime() + ttl * 1000).toISOString();
+      const payload = JSON.stringify({
+        capAmountUsd: budget.limitCents / 100,
+        currentSpendUsd: currentSpend / 100,
+        resetAt,
+      });
+      await redis.setex(`budget:killed:team:${event.teamId}`, ttl, payload);
+      if (budget.agentId) {
+        await redis.setex(`budget:killed:agent:${budget.agentId}`, ttl, payload);
+      }
+    }
+  }
 }
 
-async function detectRunaway(
-  db: Db,
-  redis: Redis,
-  event: ProxyEvent,
-  totalCostUsd: number
-): Promise<void> {
-  // Skip if already open: avoid double-firing and redundant DB writes
-  const existing = await getCircuitBreakerState(redis, event.agentId);
-  if (existing.state === "open") return;
+async function checkRunaway(event: ProxyEvent, totalTokens: number): Promise<void> {
+  const redis = getRedis();
+  const db = getDb();
+  const detector = new RunawayDetector(redis);
 
-  const totalTokens = event.usage.inputTokens + event.usage.outputTokens;
+  const velocity = await detector.checkVelocity(event.agentId, totalTokens);
 
-  const [velocityResult, loopResult] = await Promise.all([
-    trackVelocityAndDetectRunaway(redis, event.agentId, totalTokens),
-    event.promptHash
-      ? trackLoopSignature(redis, event.agentId, event.promptHash)
-      : Promise.resolve({ loop: false, count: 0 }),
-  ]);
+  if (velocity.isRunaway) {
+    const cooldownUntil = await detector.tripCircuitBreaker(event.agentId);
 
-  const runawayReason = velocityResult.runaway
-    ? "velocity"
-    : loopResult.loop
-      ? "loop"
-      : null;
+    // Set the key the proxy's budget-check middleware reads for circuit breaking
+    await redis.setex(
+      `runaway:circuit:${event.agentId}`,
+      300,
+      JSON.stringify({ state: "open", reason: "velocity", cooldownUntil: cooldownUntil.toISOString() }),
+    );
 
-  if (!runawayReason) return;
-
-  console.warn(
-    `[runaway] detected: agent=${event.agentId} reason=${runawayReason} tokens=${totalTokens} cost=$${totalCostUsd.toFixed(6)}`
-  );
-
-  await circuitBreakAgent(
-    redis,
-    db,
-    event.agentId,
-    event.teamId,
-    runawayReason,
-    totalTokens,
-    totalCostUsd
-  );
-
-  await fireRunawayAlert(db, event.teamId, {
-    agentId: event.agentId,
-    reason: runawayReason,
-    tokenCount: totalTokens,
-    estimatedCostUsd: totalCostUsd,
-    actionTaken: "circuit_break",
-  });
+    await db.insert(runawayEvents).values({
+      agentId: event.agentId,
+      teamId: event.teamId,
+      triggerType: "velocity",
+      tokenCount: totalTokens,
+      evidence: {
+        velocityWindowTokens: velocity.currentWindowTokens,
+        velocityBaseline: velocity.baselineTokensPerWindow,
+        source: "proxy-events",
+      },
+      actionTaken: "circuit_break",
+      cooldownUntil,
+    });
+  }
 }
